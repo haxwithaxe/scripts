@@ -1,0 +1,98 @@
+#!/bin/bash
+hot="$1"
+direction="$2"
+opif="$3"
+print_usage() {
+echo 'hot [spot|lan] [up|down] [<interface>]'
+echo 'defaults are "lan up eth0"'
+echo 'eg: hot . down == hot lan down eth0'
+}
+am_root(){
+if [[ `whoami` != 'root' ]]
+   then
+   echo 'Must be root to execute!'
+   exit 1
+fi ;
+}
+am_root
+if [[ $opif != '' ]]
+   then
+   if=$opif
+      elif [[ $hot == 'lan' ]]
+      then
+	 if='eth0'
+	 elif [[ $hot == 'spot' ]]
+	    then
+	    if='wlan0'
+	       else
+	       print_usage
+	       if='eth0'
+fi
+hot_up(){
+   echo -n 'putting interfaces down ...'
+   if ifconfig $if down
+      then echo 'they is down now'
+	 else
+	 echo 'fail'
+	 exit 1
+   fi
+   echo -n 'running dnsmasq ...'
+   if dnsmasq --interface=$if
+      then echo 'success'
+	 else
+	 echo 'fail'
+	 exit 1
+   fi
+   echo -n 'running iptables rules ...'
+   if iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
+      then echo 'success'
+	 else
+	 echo 'fail'
+	 exit 1
+   fi
+   echo -n 'setting server address ...'
+   if ifconfig $if 192.168.123.1
+      then echo 'success'
+	 else
+	 echo 'fail'
+	 exit 1
+   fi ;
+}
+hot_down(){
+   echo -n 'putting interfaces down ...'
+   if ifconfig $if down
+	 then echo 'they is down now'
+	    else
+	    echo 'fail'
+	    exit 1
+   fi
+   echo -n 'stopping dnsmasq ...'
+   if killall dnsmasq
+      then echo 'success'
+	 else
+	 echo 'fail'
+	 exit 1
+   fi
+   echo -n 'removing iptables rules'
+   if iptables -t nat -D POSTROUTING -o wlan0 -j MASQUERADE
+      then echo 'success'
+	 else
+	 echo 'fail'
+	 exit 1
+   fi
+   echo -n 'restoring interface'
+   if ifconfig $if up
+      then echo 'success ... done'
+	 else
+	 echo 'fail'
+	 exit 1
+   fi ;
+}
+
+if [[ $direction == down ]]
+   then hot_down
+      elif [[ $direction == up ]]
+	 then hot_up
+	    else hot_up
+fi
+exit 0

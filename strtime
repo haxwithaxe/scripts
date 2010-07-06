@@ -1,0 +1,20 @@
+#!/usr/bin/python2.6
+
+import datetime,time
+from optparse import OptionParser
+
+parser = OptionParser()
+
+parser.add_option("-t","--time",type="float")
+
+parser.add_option("-s","--strtime",dest="stime")
+
+parser.add_option("-f","--format",dest="dformat")
+
+(options, args) = parser.parse_args()
+
+if options.time:
+   print(datetime.datetime.fromtimestamp(options.time).strftime(options.dformat))
+
+if options.stime:
+   print(time.mktime(time.strptime(options.stime,options.dformat)))

@@ -1,0 +1,23 @@
+#!/bin/bash
+# script lives at /usr/local/bin/wepcracker
+# Author: Chris Koepke
+# Date: 2010/05/29
+# Description: Learning to crack wep again and decided to write a script
+#              to help me remember how
+########################################################################
+# init vars
+intf=$1
+
+# general functions
+show_help(){
+   echo <<EOF
+   wepcracker
+   >>EOF
+};
+# initiate interfaces
+
+# capture packets
+
+# replay packets
+
+# 

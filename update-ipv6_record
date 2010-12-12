@@ -1,0 +1,3 @@
+#!/bin/bash
+UPDATEURL=''
+wget -q "${UPDATEURL}&address=`ifconfig | grep Global | cut -d' ' -f13 | cut -d'/' -f1`" -O - > /dev/null

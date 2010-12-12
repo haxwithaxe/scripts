@@ -1,6 +1,6 @@
 #!/bin/bash
 action=$1
-apps_on=( skype pidgin thunderbird )
+apps_on=( skype pidgin thunderbird_tray )
 apps_off=( skype pidgin thunderbird-bin )
 
 start_app(){

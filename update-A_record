@@ -1,0 +1,19 @@
+#!/bin/bash
+
+iface=$1
+
+url=$2
+
+cachefile="/var/cache/ipv6addr.cache"
+
+IPCACHE=`cat ${cachefile}`
+
+IPNOW=`ifconfig ${iface} | grep -v inet6 | grep inet | cut -d':' -f2 | cut -d' ' -f1`
+
+if [[ $IPCACHE != $IPNOW ]];then
+
+        wget -q "http://freedns.afraid.org/dynamic/update.php?${url}" -O - 2>&1 > /dev/null
+
+        echo $IPNOW > $cachefile
+
+fi

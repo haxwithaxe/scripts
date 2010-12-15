@@ -1,14 +1,12 @@
 #!/bin/bash
 
-iface=$1
-
-url=$2
+url=$1
 
 cachefile="/var/cache/ipv6addr.cache"
 
 IPCACHE=`cat ${cachefile}`
 
-IPNOW=`ifconfig ${iface} | grep -v inet6 | grep inet | cut -d':' -f2 | cut -d' ' -f1`
+IPNOW=`wget -q http://www.whatismyip.org/ -O -`
 
 if [[ $IPCACHE != $IPNOW ]];then
 

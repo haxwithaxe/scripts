@@ -2,7 +2,7 @@
 
 url=$1
 
-cachefile="/var/cache/ipv6addr.cache"
+cachefile="/var/cache/ipv4addr.cache"
 
 IPCACHE=`cat ${cachefile}`
 

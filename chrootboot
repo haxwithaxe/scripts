@@ -1,0 +1,21 @@
+#!/bin/bash
+
+CHROOT="/jail"
+
+SVC_LIST="ssh"
+
+start_svc(){
+
+        chroot $CHROOT /etc/init.d/${1} start
+
+}
+
+mount -o bind /dev /jail/dev
+
+chroot ${CHROOT} mount -t proc none /proc
+
+for i in ${SVC_LIST};do
+
+        start_svc $i
+
+done

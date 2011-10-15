@@ -4,7 +4,15 @@ url=$1
 
 cachefile="/var/cache/ipv4addr.cache"
 
-IPCACHE=`cat ${cachefile}`
+if [ -e $cachefile ] ;then
+
+        IPCACHE=`cat ${cachefile}`
+
+else
+
+        IPCACHE=''
+
+fi
 
 IPNOW=`wget -q http://www.whatismyip.org/ -O -`
 

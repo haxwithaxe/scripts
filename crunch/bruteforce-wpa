@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# this script doesn't work too well as it might not complete for several decades :/
+
+if [ -z $3 ] ;then
+	crunchdir=`pwd`
+else
+	crunchdir=$3
+fi
+essid=$2
+pcap=$1
+
+$crundir/crunch 8 66 -f charset.lst mixalpha-numeric-all-space | pyrit -i - -r ../${pcap} -e "${essid}" attack_passthrough
+
+wait
+if which beep 1>/dev/null 2>/dev/null ;then
+	beep
+else
+	aplay /usr/share/sounds/alsa/*
+fi

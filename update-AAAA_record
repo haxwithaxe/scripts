@@ -4,7 +4,15 @@ url=$1
 
 cachefile="/var/cache/ipv6addr.cache"
 
-IPCACHE=`cat ${cachefile}`
+if [ -f $cachefile ] ;then
+
+	IPCACHE=`cat ${cachefile}`
+
+else
+
+	IPCACHE=''
+
+fi
 
 IPNOW=`ifconfig | grep Global | cut -d' ' -f13 | cut -d'/' -f1`
 

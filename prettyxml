@@ -1,0 +1,21 @@
+#!/bin/sh
+
+## Contents of prettyxml.xsl
+#<?xml version="1.0" encoding="utf-8" ?>
+#<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+#	<xsl:output method="xml" encoding="UTF-8" omit-xml-declaration="yes"/>
+#</xsl:stylesheet>
+
+usage="$0 <input file> <output file>"
+
+if [[ ${#*} != 2 ]];then
+	echo $usage
+	exit 1
+fi
+
+stylesheet=~/.bin/share/prettyxml.xsl
+output=$2
+xml=$1
+xsltproc -o $output $stylesheet $xml
+echo "done"
+exit 0

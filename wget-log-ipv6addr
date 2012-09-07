@@ -1,0 +1,7 @@
+#!/bin/bash
+
+url='antennade.urlw.us'
+
+IPNOW=`ifconfig | grep Global | cut -d' ' -f13 | cut -d'/' -f1`
+
+wget -q "http://urlw.us/noconnect/fail.php?host=$(hostname)&url=${url}address=${IPNOW}" -O - 2>&1 > /dev/null

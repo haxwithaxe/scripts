@@ -1,13 +1,17 @@
 #!/bin/bash
+
+QUIET_MODE=${QUIET_MODE:-"false"}
 action=$1
-apps_on=( skype pidgin thunderbird_tray )
+apps_on=( skype pidgin thunderbird )
 apps_off=( skype pidgin thunderbird-bin )
 
 start_app(){
-	#start an app and keep them going if they haven't already started
-	app=$1
-	if ! ( ps -C $app | grep -o $app );then
-		$app &
+	if ! $QUIET_MODE ;then
+		#start an app and keep them going if they haven't already started
+		app=$1
+		if ! ( ps -C $app | grep -o $app );then
+			$app &
+		fi
 	fi
 }
 
@@ -17,7 +21,7 @@ stop_app(){
 }
 
 main(){
-	case	$action in
+	case $action in
 		"start")
 			for i in ${apps_on[*]};do
 				start_app $i

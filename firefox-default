@@ -1,0 +1,38 @@
+#!/bin/bash
+
+app=firefox-default
+pid_file=/tmp/run/$app/pid
+if ! [ -d `dirname $pid_file` ] ;then
+	mkdir -p `dirname $pid_file`
+fi
+touch $pid_file
+
+is_running(){
+	running=1
+	pid_list=''
+	while read p ;do
+		if ( ps $p | grep -qo $p ) ;then
+			running=0
+			pid_list=${pid_list}\n$p
+		fi
+	done < $pid_file
+	echo -ne $pid_list > $pid_file
+	return $running
+}
+
+if is_running ;then
+	echo already running
+	firefox -P default $* &
+	pid=$!
+	echo $pid >> $pid_file
+else
+	echo first instance
+	firefox -P default \
+		--new-instance \
+		$* \
+		2>>/tmp/${app}-stderr-session-${today}.log \
+		1>>/tmp/${app}-stdout-session-${today}.log \
+		&
+	pid=$!
+	echo $pid >> $pid_file
+fi

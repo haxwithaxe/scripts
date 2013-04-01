@@ -5,10 +5,8 @@ profile="work"
 app_exec="firefox"
 app="$app_exec-$profile"
 first_args="-P $profile \
-	--new-instance \
-	$* \
-	2>>/tmp/${app}-stderr-session-${today}.log \
-	1>>/tmp/${app}-stdout-session-${today}.log"
+	-new-instance \
+	$*"
 subseq_args="-P $profile $*"
 pid_file=/tmp/run/$app/pid
 if ! [ -d `dirname $pid_file` ] ;then

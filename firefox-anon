@@ -1,7 +1,7 @@
 #!/bin/bash
 
 today=`date --date='Today 00:00:00' +%s`
-profile="default"
+profile="anon"
 app_exec="firefox"
 app="$app_exec-$profile"
 first_args="-P $profile \

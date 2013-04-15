@@ -25,20 +25,21 @@ am_root(){
 iptables_rules_up(){
     lan=$1
 	inet=$2
-	/sbin/iptables -t nat -A POSTROUTING -o $lan -j MASQUERADE || return 1
-	/sbin/iptables -A FORWARD -i $lan -o $inet -j ACCEPT || return 1
+	/usr/sbin/iptables -t nat -A POSTROUTING -o $lan -j MASQUERADE || return 1
+	/usr/sbin/iptables -A FORWARD -i $lan -o $inet -j ACCEPT || return 1
 	return 0
 }
 
 iptables_rules_down(){
 	lan=$1
 	inet=$2
-	/sbin/iptables -t nat -D POSTROUTING -o $lan -j MASQUERADE || return 1
-    /sbin/iptables -D FORWARD -i $lan -o $inet -j ACCEPT || return 1
+	/usr/sbin/iptables -t nat -D POSTROUTING -o $lan -j MASQUERADE || return 1
+    /usr/sbin/iptables -D FORWARD -i $lan -o $inet -j ACCEPT || return 1
 	return 0
 }
 
 _forwarding(){
+    echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
 	dir=$1
 	if [[ $dir == $UP ]] ;then
 		val=1
@@ -58,7 +59,8 @@ _iface(){
 	lan=$1
 	ipaddr=$2
 	dir=$3
-	if [[ $dir == $UP ]]
+    echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
+	if [[ $dir == $UP ]] ;then
 	    direction_msg='restoring interface'
     	ifacecmd="ifconfig $lan up"
 	else
@@ -91,6 +93,7 @@ _dnsmasq(){
 	dhcp_end=$3
 	lease_time=$4
 	dir=$5
+    echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
 	if [[ $dir == $UP ]] ;then
 		direction_msg='running dnsmasq ...'
 		dnsmasqcmd="dnsmasq --interface=$lan --dhcp-range=\"$dhcp_start,$dhcp_end,$lease_time\""
@@ -112,6 +115,7 @@ _iptables(){
 	lan=$1
 	inet=$2
 	dir=$3
+    echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
 	if [[ $dir == $UP ]] ;then
 		iptables_msg='loading iptables rules ...'
 		iptablescmd="iptables_rules_up $lan $inet"
@@ -131,51 +135,51 @@ _iptables(){
 hot(){
 	lan=$1
 	inet=$2
-	ipaddr=$3
-	dhcp_start=$4
-    dhcp_end=$5
-    lease_time=$6
-	dir=$7
+	dhcp_start=$3
+    dhcp_end=$4
+    lease_time=$5
+	dir=$6
+	ipaddr=$7
+	echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
 	_forwarding $dir
 	_iface $lan $ipaddr $dir
 	_dnsmasq $lan $dhcp_start $dhcp_end $lease_time $dir
-	_iptables_rules_down $if $inet $dir
+	_iptables $if $inet $dir
 }
 
 #defaults
 lan=$WIRED_0
 inet=$WIRELESS_0
+ipaddr=192.168.35.1
 dhcp_start=192.168.35.100
 dhcp_end=192.168.35.200
 lease_time=3600
-direction=$UP
+dir=$UP
 
 # handle args
 index=0
-while ((index<$*)); do
-	arg=${@[$index]}
-	nextpos=${@:$(($index+1)):1}
-	case "$arg" in
-		"-h"|"--help")
+while getopts "hi:o:udls" OPTION ; do
+	case $OPTION in
+		h)
 			print_usage
 			;;
-		"-i")
-			lan=$nextpos
+		i)
+			lan=$OPTARG
 			;;
-		"-o")
-			inet=$nextpos
+		o)
+			inet=$OPTARG
 			;;
-		"-u"|"up")
-			direction=$UP
+		u)
+			dir=$UP
 			;;
-		"-d"|"down")
-			direction=$DOWN
+		d)
+			dir=$DOWN
 			;;
-		"lan")
+		l)
 			lan=$WIRED
 			inet=$WIRELESS
 			;;
-		"spot")
+		s)
 			lan=$WIRELESS
 			inet=$WIRED
 			;;
@@ -184,4 +188,5 @@ while ((index<$*)); do
 	esac
 done
 
-hot $lan $inet $direction
+echo "hot $lan $inet $dhcp_start $dhcp_end $lease_time $dir $ipaddr"
+hot $lan $inet $dhcp_start $dhcp_end $lease_time $dir $ipaddr

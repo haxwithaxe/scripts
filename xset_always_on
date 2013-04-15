@@ -1,0 +1,33 @@
+#!/bin/bash
+_xset="xset -display :0.0"
+
+screensaver_off(){
+	$_xset -dpms s 0 0
+	$_xset -dpms s noexpose
+	$_xset -dpms s off
+}
+
+is_screensaver_off(){
+	$_xset q | grep -q 'timeout:  0    cycle:  0' || return 1
+	return 0
+}
+
+display_on(){
+	$_xset dpms 0 0 0
+	$_xset dpms force on
+}
+
+is_display_on(){
+	($_xset q | grep -q 'Monitor is On') || return 1
+	return 0
+}
+
+while true ;do
+	if ! is_display_on ;then
+		display_on
+	fi
+	if ! is_screensaver_off ;then
+		screensaver_off
+	fi
+	sleep 1
+done

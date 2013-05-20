@@ -1,0 +1,40 @@
+#!/bin/bash
+
+today=`date --date='Today 00:00:00' +%s`
+profile="personal"
+app_exec="firefox"
+app="$app_exec-$profile"
+first_args="-P $profile \
+	-new-instance \
+	$*"
+subseq_args="-P $profile $*"
+pid_file=/tmp/run/$app/pid
+if ! [ -d `dirname $pid_file` ] ;then
+	mkdir -p `dirname $pid_file`
+fi
+touch $pid_file
+
+is_running(){
+	running=1
+	pid_list=''
+	while read p ;do
+		if ( ps $p | grep -qo $p ) ;then
+			running=0
+			pid_list=${pid_list}\n$p
+		fi
+	done < $pid_file
+	echo -ne $pid_list > $pid_file
+	return $running
+}
+
+if is_running ;then
+	echo already running
+	$app_exec $subseq_args &
+	pid=$!
+	echo $pid >> $pid_file
+else
+	echo first instance
+	$app_exec $first_args &
+	pid=$!
+	echo $pid >> $pid_file
+fi

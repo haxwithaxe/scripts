@@ -12,4 +12,9 @@ sed -i "s/^.*${tls_fp_key}.*$/${tls_fp_config}/" $config_file
 echo config updated
 
 echo starting pianobar
-pianobar
+if [ "$1" = "-d" ]; then
+	while true ;do clear ;pianobar ;sleep 1 ;done
+else
+	pianobar || exit 1
+fi
+exit 0

@@ -14,6 +14,16 @@ if ! [ -d `dirname $pid_file` ] ;then
 fi
 touch $pid_file
 
+get_wm_tools(){
+	#assumes symlinked to dev/scripts with window-by-pid.sh in the same directory
+	echo $(dirname `realpath $0`)/window-by-pid.sh
+}
+. `get_wm_tools`
+
+set_class_to_profile(){
+	set_class_for_pid $app $1
+}
+
 is_running(){
 	running=1
 	pid_list=''
@@ -31,10 +41,12 @@ if is_running ;then
 	echo already running
 	$app_exec $subseq_args &
 	pid=$!
+	set_class_to_profile $pid
 	echo $pid >> $pid_file
 else
 	echo first instance
 	$app_exec $first_args &
 	pid=$!
+    set_class_to_profile $pid
 	echo $pid >> $pid_file
 fi

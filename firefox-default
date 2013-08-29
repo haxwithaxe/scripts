@@ -1,5 +1,5 @@
 #!/bin/bash
-
+called_as=$(basenam $0 sh)
 today=`date --date='Today 00:00:00' +%s`
 profile="default"
 app_exec="firefox"
@@ -27,11 +27,27 @@ is_running(){
 	return $running
 }
 
+set_name(){
+	xprop -id $1 -set name "${called_as}-$2"
+}
+
+set_window_name_from_pid(){
+	wins=`xwininfo -root -children 2>/dev/null | grep -i $app_name | grep -vi popup | sed 's/^[[:space:]]\+//g;s/'`
+	for w in $wins ;do
+		wpid=`xprop -id $w _NET_WM_PID | awk '{print $3}'`
+		if [ "$wid" -eq "$w" ] ;then
+			set_name $wid $pid
+			return 0
+		fi
+	done
+}
+
 if is_running ;then
 	echo already running
 	$app_exec $subseq_args &
 	pid=$!
 	echo $pid >> $pid_file
+	set_window_name_from_pid $pid
 else
 	echo first instance
 	$app_exec $first_args &

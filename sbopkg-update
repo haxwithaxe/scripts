@@ -1,0 +1,22 @@
+#!/bin/bash
+
+sbo_repos=/var/lib/sbopkg
+sbo_pkgs=SBo-git
+sbo_queues=queues
+
+git_pull(){
+	git pull -f
+}
+
+echo  Updating SBo-git
+cwd=`pwd`
+cd ${sbo_repos}/${sbo_pkgs}
+git_pull
+echo Done updating SBo-git
+
+echo  Updating queues
+cd ${sbo_repos}/${sbo_queues}
+git_pull
+echo Done updating queues
+
+cd $cwd

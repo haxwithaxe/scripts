@@ -2,46 +2,43 @@
 
 UP="up"
 DOWN="down"
-WIRELESS_0=wlan0
-WIRELESS=$WIRELESS_0
-WIRED_0=eth0
-WIRED=$WIRED_0
+ACTION=${ACTION:=$UP}
+WAN=${WAN:=eth0}
+LAN=${LAN:=wlan0}
+LAN_IPADDR=172.16.0.1
+DHCP_START=${DHCP_START:=100}
+DHCP_END=${DHCP_END:=200}
+DHCP_LEASE=${DHCP_LEASE:=3600}
 
 print_usage() {
 	cat - <<-EOF
-hot [spot|lan] [up|down] [<interface>]
+hot -o <wan interface> -i <lan interface> -u -d -l -w
 	defaults are "lan up eth0"
 	eg: hot . down == hot lan down eth0
 	EOF
 }
 
 am_root(){
-	if [[ `whoami` != 'root' ]] ;then
-		echo 'Must be root to execute!'
+	if [[ `whoami` != "root" ]] ;then
+		echo "Must be root to execute!"
 		exit 1
 	fi
 }
 
 iptables_rules_up(){
-    lan=$1
-	inet=$2
-	/usr/sbin/iptables -t nat -A POSTROUTING -o $lan -j MASQUERADE || return 1
-	/usr/sbin/iptables -A FORWARD -i $lan -o $inet -j ACCEPT || return 1
+	/usr/sbin/iptables -t nat -A POSTROUTING -o $LAN -j MASQUERADE || return 1
+	/usr/sbin/iptables -A FORWARD -i $LAN -o $WAN -j ACCEPT || return 1
 	return 0
 }
 
 iptables_rules_down(){
-	lan=$1
-	inet=$2
-	/usr/sbin/iptables -t nat -D POSTROUTING -o $lan -j MASQUERADE || return 1
-    /usr/sbin/iptables -D FORWARD -i $lan -o $inet -j ACCEPT || return 1
+	/usr/sbin/iptables -t nat -D POSTROUTING -o $LAN -j MASQUERADE || return 1
+    /usr/sbin/iptables -D FORWARD -i $LAN -o $WAN -j ACCEPT || return 1
 	return 0
 }
 
 _forwarding(){
-    echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
-	dir=$1
-	if [[ $dir == $UP ]] ;then
+	if [[ $ACTION == $UP ]] ;then
 		val=1
 	else
 		val=0
@@ -56,137 +53,90 @@ _forwarding(){
 }
 
 _iface(){
-	lan=$1
-	ipaddr=$2
-	dir=$3
-    echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
-	if [[ $dir == $UP ]] ;then
-	    direction_msg='restoring interface'
-    	ifacecmd="ifconfig $lan up"
+	if [[ $ACTION == $UP ]] ;then
+	    echo -n "loading interface ..."
 	else
-		direction_msg='putting interfaces down ...'
-		ifacecmd="ifconfig $lan down"
+		echo -n "putting interfaces down ..."
 	fi
 
-	echo $direction_msg
-	if $ifacecmd ;then
-		echo 'they is down now'
+	if ( ifconfig $LAN $ACTION ) && ( ifconfig $WAN $ACTION ) ;then
+		echo "they is $ACTION now"
 	else
-		echo 'fail'
+		echo "failed to $ACTION interfaces"
 		return 1
-	fi
-	if [[ $dir == $UP ]] ;then
-	    echo -n 'setting server address ...'
-    	if ifconfig $lan $ipaddr ;then
-	        echo 'success'
-    	else
-	        echo 'fail'
-    	    return 1
-	    fi
 	fi
 	return 0
 }
 
 _dnsmasq(){
-	lan=$1
-	dhcp_start=$2
-	dhcp_end=$3
-	lease_time=$4
-	dir=$5
-    echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
-	if [[ $dir == $UP ]] ;then
-		direction_msg='running dnsmasq ...'
-		dnsmasqcmd="dnsmasq --interface=$lan --dhcp-range=\"$dhcp_start,$dhcp_end,$lease_time\""
+	if [[ $ACTION == $UP ]] ;then
+		echo -n "running dnsmasq ..."
+		dnsmasq --interface=$LAN --dhcp-range="$DHCP_START,$DHCP_END,$DHCP_LEASE" || ( echo "failed to start dnsmasq" && return 1 )
 	else
-		direction_msg='running dnsmasq ...'
-		dnsmasqcmd="killall dnsmasq"
-	fi
-	echo -n $dnsmasq_msg
-	if $dnsmasqcmd ;then
-		echo 'success'
-	else
-		echo 'fail'
-		return 1
+		echo -n "running dnsmasq ..."
+		killall -w dnsmasq || ( echo "failed to kill dnsmasq" && return 1 )
 	fi
 	return 0
 }
 
 _iptables(){
-	lan=$1
-	inet=$2
-	dir=$3
-    echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
-	if [[ $dir == $UP ]] ;then
-		iptables_msg='loading iptables rules ...'
-		iptablescmd="iptables_rules_up $lan $inet"
+	if [[ $ACTION == $UP ]] ;then
+		echo -n "loading iptables rules ..."
+		iptables_rules_up  || ( echo "failed to set iptables rules" && return 1 )
 	else
-		iptables_msg='removing iptables rules ...'
-		iptablescmd="iptables_rules_down $lan $inet"
+		echo -n "removing iptables rules ..."
+		iptables_rules_down || ( echo "failed to remove iptables rules" && return 1 )
 	fi
-	echo -n $iptables_msg
-	if $iptablescmd ;then
-		echo 'success'
-	else
-		echo 'fail'
-		return 1
-	fi
+	return 0
 }
 
 hot(){
-	lan=$1
-	inet=$2
-	dhcp_start=$3
-    dhcp_end=$4
-    lease_time=$5
-	dir=$6
-	ipaddr=$7
-	echo 1 $1 2 $2 3 $3 4 $4 5 $5 6 $6 7 $7 8 $8
-	_forwarding $dir
-	_iface $lan $ipaddr $dir
-	_dnsmasq $lan $dhcp_start $dhcp_end $lease_time $dir
-	_iptables $if $inet $dir
+	#am_root
+	_forwarding
+	_iface
+	_dnsmasq
+	_iptables
 }
 
-#defaults
-lan=$WIRED_0
-inet=$WIRELESS_0
-ipaddr=192.168.35.1
-dhcp_start=192.168.35.100
-dhcp_end=192.168.35.200
-lease_time=3600
-dir=$UP
-
 # handle args
-index=0
-while getopts "hi:o:udls" OPTION ; do
-	case $OPTION in
-		h)
-			print_usage
-			;;
-		i)
-			lan=$OPTARG
-			;;
-		o)
-			inet=$OPTARG
-			;;
-		u)
-			dir=$UP
-			;;
-		d)
-			dir=$DOWN
-			;;
-		l)
-			lan=$WIRED
-			inet=$WIRELESS
-			;;
-		s)
-			lan=$WIRELESS
-			inet=$WIRED
-			;;
-		*)
-			;;
-	esac
-done
+handle_args(){
+	index=0
+	while getopts "hi:o:udlw" OPTION ; do
+		case $OPTION in
+			h)
+				print_usage
+				return 1
+				;;
+			i)
+				LAN=$OPTARG
+				;;
+			o)
+				WAN=$OPTARG
+				;;
+			u)
+				ACTION=$UP
+				;;
+			d)
+				ACTION=$DOWN
+				;;
+			l)
+				LAN=$LAN
+				WAN=$WAN
+				;;
+			w)
+				lan_orig=$LAN
+				LAN=$WAN
+				WAN=$lan_orig
+				;;
+			*)
+				print_usage
+				return 1
+				;;
+		esac
+	done
+	return 0
+}
 
-echo "hot $lan $inet $dhcp_start $dhcp_end $lease_time $dir $ipaddr"
-hot $lan $inet $dhcp_start $dhcp_end $lease_time $dir $ipaddr
+if handle_args ;then
+	hot
+fi

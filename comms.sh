@@ -2,8 +2,8 @@
 
 QUIET_MODE=${QUIET_MODE:-"false"}
 action=$1
-apps_on=( skype pidgin thunderbird )
-apps_off=( skype pidgin thunderbird-bin )
+apps_on=( pidgin thunderbird )
+apps_off=( pidgin thunderbird-bin )
 
 start_app(){
 	if ! $QUIET_MODE ;then

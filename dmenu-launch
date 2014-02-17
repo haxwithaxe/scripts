@@ -193,7 +193,7 @@ build_hist_menu () {
 }
 
 program_exists () {
-    type -p "$1" &> /dev/null
+    which "$1" &> /dev/null
 }
 
 launch () {

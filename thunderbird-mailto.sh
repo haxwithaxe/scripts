@@ -1,5 +1,0 @@
-#!/bin/sh
-
-thunderbird -compose "$@"
-
-

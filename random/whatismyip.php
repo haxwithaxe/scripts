@@ -1,5 +1,5 @@
 <?php
-	print('Content-Type: text/plain\n\n');
+	print("Content-Type: text/plain\n\n");
 
     if (!empty($_SERVER['HTTP_CLIENT_IP'])) //if from shared
     {

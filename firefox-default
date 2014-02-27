@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright 2014 haxwithaxe
+# License: CC0
+
+# Launch firefox under the default profile
+
 called_as=$(basenam $0 sh)
 today=`date --date='Today 00:00:00' +%s`
 profile="default"

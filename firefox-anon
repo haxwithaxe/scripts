@@ -8,17 +8,22 @@ today=`date --date='Today 00:00:00' +%s`
 profile="anon"
 app_exec="firefox"
 app="$app_exec-$profile"
+# arguments for the initial launching of this profile of firefox
 first_args="-P $profile \
 	-new-instance \
 	-private \
 	$*"
+# arguments for subsequent launches
 subseq_args="-P $profile -private $*"
+
+# getto pid file
 pid_file=/tmp/run/$app/pid
 if ! [ -d `dirname $pid_file` ] ;then
 	mkdir -p `dirname $pid_file`
 fi
 touch $pid_file
 
+# is this profile already running?
 is_running(){
 	running=1
 	pid_list=''

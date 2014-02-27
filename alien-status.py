@@ -8,6 +8,7 @@ __license__ = 'GPLv3'
 import random
 random.seed()
 
+# UTF-8 characters hand picked for looking like scifi alien writing
 alien_alphabet = ['𝂠', 
 		'𝂡', 
 		'𝂢', 
@@ -832,6 +833,8 @@ alien_alphabet = ['𝂠',
 		'ʭ']
 
 def get_alien_status():
-	return ''.join(random.sample(alien_alphabet, random.randint(1,30)))
+    ''' Return a randome number (between 1 and 30) of a random selection of characters. '''
+    return ''.join(random.sample(alien_alphabet, random.randint(1,30)))
 
-print(get_alien_status())
+if __name__ == '__main__':
+    print(get_alien_status())

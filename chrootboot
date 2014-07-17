@@ -1,4 +1,8 @@
 #!/bin/bash
+# Copyright 2014 haxwithaxe
+# License: CC0
+
+# Do stuff in a chroot that normally happen during boot.
 
 CHROOT="/jail"
 

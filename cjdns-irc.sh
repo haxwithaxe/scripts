@@ -1,4 +1,5 @@
 #!/bin/bash
+# connect to the cjdns ircd from a cjdns node
 
 CJDNS_IP="`/sbin/ifconfig -a | grep 'inet6 addr'|cut -d: -f2-|cut -d\  -f2|cut -d\/ -f1|grep ^fc`"
 NICK="`echo $CJDNS_IP|cut -d: -f1`"

@@ -7,13 +7,15 @@ __authors__ = ['haxwithaxe me@haxwithaxe.net']
 
 __license__ = 'GPLv3'
 
+import sys
 import pywapi
 import urllib2
 import json
 from Weather.data import rows #FIXME replace with seperate db
 import argparse
 
-'''{   'dewpoint_c': u'-3.3',
+''' example NOAA weather data:
+    { 'dewpoint_c': u'-3.3',
     'dewpoint_f': u'26.1',
     'dewpoint_string': u'26.1 F (-3.3 C)',
     'icon_url_base': u'http://forecast.weather.gov/images/wtf/small/',
@@ -65,22 +67,43 @@ def address2station(loc):
     return close[0]
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-s', '--station', dest='station', required=False)
-parser.add_argument('-l', '--location', dest='location', required=False)
-args = parser.parse_args()
+def handle_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--station', dest='station', required=False)
+    parser.add_argument('-l', '--location', dest='location', required=False)
+    args = parser.parse_args()
+    return args
 
-station = args.station
+def get_weather_data(station):
+    try:
+        if args.location:
+            station = address2station(args.location)    # station already defined
+        noaa_result = pywapi.get_weather_from_noaa(station)
+        return noaa_result
+    except:
+        print('weather error')
+        sys.exit(0)
 
-try:
-    if args.location:
-        station = address2station(args.location)
+def make_message(noaa_result):
+    wmsg = []
+    if noaa_result.get('weather'):
+        wmsg.append('cur:%s' % noaa_result.get('weather'))
+    if noaa_result.get('temp_c'):
+        wmsg.append('%sC' % noaa_result.get('temp_c'))
+    if noaa_result.get('windchill_c'):
+        wmsg.append('chill:%sC' % noaa_result.get('windchill_c'))
+    if noaa_result.get('relative_humidity'):
+        wmsg.append('hu:%s%%' % noaa_result.get('relative_humidity'))
 
-    noaa_result = pywapi.get_weather_from_noaa(station)
+    if len(wmsg) < 1:
+        return 'weather error'
+    return ' '.join(wmsg)
 
-    print(' '.join(['cur:%s' % (noaa_result.get('weather') or ''), 
-            '%sC' % (noaa_result.get('temp_c') or '?'), 
-            'chill:%sC' % (noaa_result.get('windchill_c') or '?'), 
-            'hu:%s%%' % (noaa_result.get('relative_humidity') or '?')]))
-except:
-    print('weather error')
+
+# parse args
+args = handle_args()
+# 
+wdata = get_weather_data(args.station)
+wmsg = make_message(wdata)
+print(wmsg)
+

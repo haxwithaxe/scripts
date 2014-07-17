@@ -1,4 +1,5 @@
 #!/bin/bash
+# generate an html index of a directory
 echo '<html>'
 echo '<body>'
 echo '<h1>Index of files</h1>'

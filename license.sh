@@ -1,5 +1,5 @@
 #!/bin/bash
-DEFAULT_LICENCE="mit"
+DEFAULT_LICENCE="gpl"
 
 debug(){
 	echo -e "$@" 1>&2

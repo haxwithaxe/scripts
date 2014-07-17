@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# check if json is well formed (ala xmlwf)
+
 import json,sys
 
 def file2str(fname):

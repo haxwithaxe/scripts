@@ -7,7 +7,7 @@ __authors__ = ['haxwithaxe me@haxwithaxe.net']
 
 __license__ = 'GPLv3'
 
-import sys
+import sys ;sys.exit()
 import pywapi
 import urllib2
 import json

@@ -1,0 +1,31 @@
+#/bin/sh
+OUTPATH=${PRNSCRN_OUTPATH:-$HOME/Dropbox/Public}
+IMGPATH=${PRNSCRN_IMG:-"screenshot-`date +%Y%m%d-%H%M%S`.png"}
+IMG=$OUTPATH/$IMGPATH
+
+echo $IMG
+
+fullscreen(){
+	import -window root $IMG
+	echo $IMG
+}
+
+onlywindow(){
+	import -window "$(xprop -root | sed -n 's/^_NET_ACTIVE_WINDOW(WINDOW): window id # //p')" $IMG
+	echo $IMG
+}
+
+while getopts wa opt "$@" ;do
+	case $opt in
+		-w)
+			onlywindow
+			;;
+		-a)
+			fullscreen
+			;;
+	esac
+done
+
+if [ -z $@ ] ;then
+	fullscreen
+fi

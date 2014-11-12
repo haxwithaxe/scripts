@@ -1,8 +1,15 @@
 #!/bin/bash
 
+set -e
+
 # run this at the beginning of every x session
 # xhost +si:localuser:$(whoami)
 export DISPLAY=:0.0
+
+_play_cmd=echo
+_beep(){
+	beep -f4800 -l500 && beep -f2000 -l200 && beep -f2700 -l500 && beep -f1800 -l300
+}
 
 TEMP=`getopt -o xgp:s:m: -- "$@"`
 
@@ -52,13 +59,22 @@ done
 
 _xmessage=${_xmessage:-gxmessage}
 _sound=${_sound:-/usr/share/sounds/KDE-Sys-App-Error-Critical.ogg}
-_play=${_play:-paplay}
+_play=${_play:-_beep} # paplay}
 
-message=${message:-"ALARM"}
+main(){
+	message="${message:-ALARM} $0 $_play $_sound "
 
-while true ;do $_play $_sound ;done &
+	while true ;do $_play $_sound ;done &
 
-play_pid=$!
+	play_pid=$!
 
-$_xmessage $message
-kill -9 $play_pid
+	$_xmessage $message
+
+	if [ `ps a | grep -q $play_pid` ] ;then
+		kill -9 $play_pid
+	else
+		killall `basename $0`
+	fi
+}
+
+main || exit 0

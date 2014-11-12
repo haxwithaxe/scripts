@@ -104,6 +104,9 @@ terminal='urxvt'
 config_menu=('Clear History' 'Run in Terminal' 'Terminal' 'Detach'
              'Show Binaries' 'Show XDG Names' 'History' 'Cache')
 
+if [ -e $HOME/.pathrc ] ;then
+	source $HOME/.pathrc
+fi
 
 #################
 ### Functions ###

@@ -1,0 +1,9 @@
+#!/bin/sh
+# darkice-<source> - create a darkice instance with the config matching the
+# name used to launch this script.
+
+config_dir=${XDG_CONFIG_HOME:-$HOME/.config}
+config=$config_dir/darkice/$(basename $0).cfg
+debug="" #"strace -eopen "
+
+${debug}darkice -c $config &> /tmp/$(basename $0).log

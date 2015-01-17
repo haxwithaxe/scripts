@@ -1,0 +1,7 @@
+#!/bin/bash
+# Copyright 2014 haxwithaxe
+# License: CC0
+
+# Redirect to (firefox-profile -> firefox-default) and launch firefox under the default profile
+
+firefox-default $*

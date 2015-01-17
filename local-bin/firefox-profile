@@ -2,10 +2,11 @@
 # Copyright 2014 haxwithaxe
 # License: CC0
 
-# Launch firefox with the default profile at work.
+# Launch firefox under the profile named after firefox-<profile name>
 
 today=`date --date='Today 00:00:00' +%s`
-profile="work"
+script=$(basename $0)
+profile="${script/*-/}"
 app_exec="firefox"
 app="$app_exec-$profile"
 # arguments for the initial launching of this profile of firefox
@@ -22,7 +23,17 @@ if ! [ -d `dirname $pid_file` ] ;then
 fi
 touch $pid_file
 
-# is this profile already running?
+# an attempt to manipulate the windows on launch
+#get_wm_tools(){
+#	#assumes symlinked to dev/scripts with window-by-pid.sh in the same directory
+#	echo $(dirname `realpath $0`)/window-by-pid.sh
+#}
+#. `get_wm_tools`
+
+#set_class_to_profile(){
+#	set_class_for_pid $app $1
+#}
+
 is_running(){
 	running=1
 	pid_list=''
@@ -40,10 +51,12 @@ if is_running ;then
 	echo already running
 	$app_exec $subseq_args &
 	pid=$!
+	set_class_to_profile $pid
 	echo $pid >> $pid_file
 else
 	echo first instance
 	$app_exec $first_args &
 	pid=$!
+    set_class_to_profile $pid
 	echo $pid >> $pid_file
 fi

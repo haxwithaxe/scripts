@@ -1,7 +1,6 @@
 #!/bin/bash
 
-hosts='luigi.urlw.us;-q -f revluigi cat -
-	kuppa.urlw.us;-q -f revkuppa cat -'
+hosts='$HOST0;-q -f rev$HOST0 cat -'
 echo '$hosts '$hosts
 echo 'OK?'
 read junk

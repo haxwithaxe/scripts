@@ -1,34 +1,69 @@
 SHELL = /bin/bash
 
-.PHONY: all say firefox-work firefox-personal
+.PHONY: all firefox-work firefox-personal firefox
 .DEFAULT: all
 
 SRCDIR ?= $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/
 
-DESTDIR ?= $(HOME)/.local/
+PREFIX ?= /usr/local/
 
-HOMEBIN ?= $(shell cat $(SRCDIR)bin.lst)
+BINDIR = $(PREFIX)bin/
 
-HOMEBIN_DEST = $(foreach bin, $(HOMEBIN), $(DESTDIR)$(bin))
+SBINDIR = $(PREFIX)sbin/
 
-$(DESTDIR):
+ETCDIR = $(CONFIGDIR)
+
+BINTARGETS ?= $(foreach bin, $(shell cat $(SRCDIR)bin.lst), $(BINDIR))
+
+SBINTARGETS ?= $(foreach sbin, $(shell cat $(SRCDIR)sbin.lst), $(SBINDIR))
+
+ETCTARGETS ?= $(foreach etc, $(shell cat $(SRCDIR)etc.lst), $(ETCDIR))
+
+SHARETARGETS ?= $(foreach share, $(shell cat $(SRCDIR)share.lst), $(SHAREDIR))
+
+DARKICETARGETS ?= $(BINDIR)darkice-media $(BINDIR)darkice-ft857d $(BINDIR)darkice-rtlsdr $(BINDIR)darkice-hackrf
+
+$(BINDIR) $(SBINDIR) $(ETCDIR) $(SHAREDIR) $(PREFIX):
 	mkdir -p $@
 
-$(HOMEBIN_DEST): $(DESTDIR)
-	ln -sf $(subst $(DESTDIR), $(SRCDIR), $@) $@
+$(BINTARGETS): $(BINDIR)
+	ln -sf $(subst $(BINDIR), $(SRCDIR), $@) $@
 
-say:
-	echo $(HOMEBIN_DEST)
+$(SBINTARGETS): $(SBINDIR)
+	ln -sf $(subst $(SBINDIR), $(SRCDIR), $@) $@
 
-all: $(HOMEBIN_DEST)
+$(ETCTARGETS): $(ETCDIR)
+	ln -sf $(subst $(ETCDIR), $(SRCDIR), $@) $@
 
-firefox-work:
-	ln -s $(SRCDIR)/firefox-default /usr/local/bin/firefox-work
-	ln -s $(SRCDIR)/firefox-profile /usr/local/bin/firefox-default
-	ln -s $(SRCDIR)/firefox-profile /usr/local/bin/firefox-personal
+$(SHARETARGETS): $(SHAREDIR)
+	ln -sf $(subst $(SHAREDIR), $(SRCDIR), $@) $@
 
-firefox-personal:
-	ln -s $(SRCDIR)/firefox-default /usr/local/bin/firefox-personal
-	ln -s $(SRCDIR)/firefox-profile /usr/local/bin/firefox-default
-	ln -s $(SRCDIR)/firefox-profile /usr/local/bin/firefox-work
+all: $(BINTARGETS) $(SBINTARGETS) $(ETCTARGETS) $(SHARETARGETS)
 
+firefox: $(BINDIR)firefox-anon $(BINDIR)firefox-nono $(BINDIR)firefox-default $(BINDIR)firefox-work $(BINDIR)firefox-personal
+
+$(BINDIR)firefox-anon:
+	ln -sf $(SRCDIR)firefox-anon $(BINDIR)firefox-anon
+
+$(BINDIR)firefox-nono:
+	ln -sf $(SRCDIR)firefox-nono $(BINDIR)firefox-nono
+
+$(BINDIR)firefox-default:
+	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-default
+
+# depend on this for firefox-personal
+$(BINDIR)firefox-work:
+	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-work
+
+# depend on this for firefox-work
+$(BINDIR)firefox-personal:
+	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-personal
+
+firefox-work: firefox
+	ln -sf $(SRCDIR)firefox-default $(BINDIR)firefox-work
+
+firefox-personal: firefox
+	ln -sf $(SRCDIR)firefox-default $(BINDIR)firefox-personal
+
+$(DARKICETARGETS): $(BINDIR)darkice-source
+	ln -sf $(BINDIR)darkice-source $@

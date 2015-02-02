@@ -12,9 +12,10 @@ app="$app_exec-$profile"
 # arguments for the initial launching of this profile of firefox
 first_args="-P $profile \
 	-new-instance \
+	--class=$(basename $app_exec)-$profile \
 	$*"
 # arguments for subsequent launches
-subseq_args="-P $profile $*"
+subseq_args="-P $profile --class=$(basename $app_exec)-$profile $*"
 
 # getto pid file
 pid_file=/tmp/run/$app/pid

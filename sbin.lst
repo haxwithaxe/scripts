@@ -1,10 +1,4 @@
-brutehttp.py
 chrootboot
-domain-force.py
-hot
-index.sh
-iptableslib.sh
-irssi-ssl-cert.sh
 qemu-ifup.sh
 slax-module-mirror.py
 suspend.sh

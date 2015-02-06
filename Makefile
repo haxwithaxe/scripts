@@ -1,29 +1,31 @@
 SHELL = /bin/bash
 
-.PHONY: all firefox-work firefox-personal firefox
+.PHONY: all firefox-work firefox-personal firefox jackd noaa xsl
 .DEFAULT: all
+
+
+prefix ?= usr/local/
+exec_prefix = $(prefix)
+bindir = $(exec_prefix)bin/
+sbindir = $(exec_prefix)sbin/
+sysconfdir = $(prefix)etc/
+datadir = $(exec_prefix)share/
 
 SRCDIR ?= $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/
 
-PREFIX ?= /usr/local/
+DESTDIR ?= /
+BINDIR = $(DESTDIR)$(bindir)
+SBINDIR = $(DESTDIR)$(sbindir)
+SYSCONFDIR = $(DESTDIR)$(sysconfdir)
+DATADIR = $(DESTDIR)$(datadir)
 
-BINDIR = $(PREFIX)bin/
-
-SBINDIR = $(PREFIX)sbin/
-
-ETCDIR = $(CONFIGDIR)
-
-BINTARGETS ?= $(foreach bin, $(shell cat $(SRCDIR)bin.lst), $(BINDIR))
-
-SBINTARGETS ?= $(foreach sbin, $(shell cat $(SRCDIR)sbin.lst), $(SBINDIR))
-
-ETCTARGETS ?= $(foreach etc, $(shell cat $(SRCDIR)etc.lst), $(ETCDIR))
-
-SHARETARGETS ?= $(foreach share, $(shell cat $(SRCDIR)share.lst), $(SHAREDIR))
-
+BINTARGETS ?= $(sort $(foreach bin, $(shell cat $(SRCDIR)bin.lst), $(BINDIR)$(bin)))
+SBINTARGETS ?= $(sort $(foreach sbin, $(shell cat $(SRCDIR)sbin.lst), $(SBINDIR)$(sbin)))
+SYSCONFTARGETS ?= $(sort $(foreach etc, $(shell cat $(SRCDIR)etc.lst), $(SYSCONFDIR)$(etc)))
+DATATARGETS ?= $(sort $(foreach share, $(shell cat $(SRCDIR)share.lst), $(DATADIR)$(share)))
 DARKICETARGETS ?= $(BINDIR)darkice-media $(BINDIR)darkice-ft857d $(BINDIR)darkice-rtlsdr $(BINDIR)darkice-hackrf
 
-$(BINDIR) $(SBINDIR) $(ETCDIR) $(SHAREDIR) $(PREFIX):
+$(BINDIR) $(SBINDIR) $(SYSCONFDIR) $(DATADIR) $(DESTDIR):
 	mkdir -p $@
 
 $(BINTARGETS): $(BINDIR)
@@ -32,15 +34,21 @@ $(BINTARGETS): $(BINDIR)
 $(SBINTARGETS): $(SBINDIR)
 	ln -sf $(subst $(SBINDIR), $(SRCDIR), $@) $@
 
-$(ETCTARGETS): $(ETCDIR)
-	ln -sf $(subst $(ETCDIR), $(SRCDIR), $@) $@
+$(SYSCONFTARGETS): $(SYSCONFDIR)
+	ln -sf $(subst $(SYSCONFDIR), $(SRCDIR), $@) $@
 
-$(SHARETARGETS): $(SHAREDIR)
-	ln -sf $(subst $(SHAREDIR), $(SRCDIR), $@) $@
+$(DATATARGETS): $(DATADIR)
+	ln -sf $(subst $(DATADIR), $(SRCDIR), $@) $@
 
-all: $(BINTARGETS) $(SBINTARGETS) $(ETCTARGETS) $(SHARETARGETS)
+all: $(BINTARGETS) $(SBINTARGETS) $(SYSCONFTARGETS) $(DATATARGETS)
 
 firefox: $(BINDIR)firefox-anon $(BINDIR)firefox-nono $(BINDIR)firefox-default $(BINDIR)firefox-work $(BINDIR)firefox-personal
+
+noaa: $(BINDIR)conky-noaa.py $(BINDIR)noaa.py: $(DATADIR)noaa/stations-with-zips.csv
+
+xsl: $(BINDIR)prettyxml $(DATADIR)xsl/prettyxml.xsl
+
+jackd: $(BINDIR)jackd-audioadapters
 
 $(BINDIR)firefox-anon:
 	ln -sf $(SRCDIR)firefox-anon $(BINDIR)firefox-anon
@@ -67,3 +75,19 @@ firefox-personal: firefox
 
 $(DARKICETARGETS): $(BINDIR)darkice-source
 	ln -sf $(BINDIR)darkice-source $@
+
+$(BINDIR)conky-noaa.py $(BINDIR)noaa.py: $(DATADIR)noaa/stations-with-zips.csv
+	ln -sf $(subst $(BINDIR), $(SRCDIR), $@) $@
+
+$(DATADIR)noaa/stations-with-zips.csv: $(DATADIR)noaa/
+	ln -sf $(subst $(DATADIR), $(SRCDIR), $@) $@
+
+$(BINDIR)prettyxml: $(DATADIR)xsl/
+	ln -sf $(subst $(DATADIR), $(SRCDIR), $@) $@
+
+$(BINDIR)jackd-audioadapters:
+	ln -sf $(subst $(BINDIR), $(SRCDIR), $@) $@
+
+$(SRCDIR)noaa/stations-with-zipcodes.csv:
+	python $(SRCDIR)noaa_stations_with_zips.py noaa/noaa_stations.csv  noaa/zips.csv $@
+

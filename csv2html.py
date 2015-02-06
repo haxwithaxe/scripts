@@ -7,7 +7,7 @@ __authors__ = ['haxwithaxe <me@haxwithaxe.net>']
 __license__ = 'GPLv3'
 
 import csv
-
+#FIXME: use xml library you twit
 
 
 def attrib_to_string(**attribs):

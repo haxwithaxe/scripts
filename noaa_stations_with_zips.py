@@ -9,6 +9,7 @@ import csv
 import re
 import logging as logger
 
+logger.basicConfig(level=logger.INFO)
 
 class StationsDB(object):
     """ Stations database class. """
@@ -29,26 +30,39 @@ class StationsDB(object):
         self._load_zipcodes(zipcodes_filename)
 
     def _load_stations(self, filename):
+        """ Empty docstring. """
         # stations => {'id':entry}
-        with open(filename, "rb") as csvfile:
-            dialect = csv.Sniffer().sniff(csvfile.read(1024))
-            csvfile.seek(0)
-            stations_db = csv.DictReader(csvfile, fieldnames=self.station_headers, dialect=dialect)
+        with open(filename, "rb") as stacsv:
+            dialect = csv.Sniffer().sniff(stacsv.read(1024))
+            stacsv.seek(0)
+            stations_db = csv.DictReader(stacsv,
+                                         fieldnames=self.station_headers,
+                                         dialect=dialect)
             for station in stations_db:
-                station.update({'lat':self._degmin_to_decdeg(station.get('lat')), 'lon': self._degmin_to_decdeg(station.get('lon')), "zipcodes":[]})
+                lat = station.get('lat')
+                lon = station.get('lon')
+                logger.debug("orig: %s, %s", lat, lon)
+                declat = self._coord_to_decdeg(lat)
+                declon = self._coord_to_decdeg(lon)
+                logger.debug("decimal cood: %s, %s", declat, declon)
+                station.update({'lat': declat, 'lon': declon, "zipcodes":[]})
+                logger.debug("contry: %s; cood: %s, %s", station.get("co"), station.get("lat"), station.get("lon"))
                 self.stations.update({station.get('ind'): station})
 
     def _load_zipcodes(self, filename):
-        with open(filename, "r") as csvfile:
-            dialect = csv.Sniffer().sniff(csvfile.read(1024))
-            csvfile.seek(0)
-            zipcodes_db = csv.DictReader(csvfile, fieldnames=self.zip_headers, dialect=dialect)
+        """ Empty docstring. """
+        with open(filename, "r") as zipcsv:
+            dialect = csv.Sniffer().sniff(zipcsv.read(1024))
+            zipcsv.seek(0)
+            zipcodes_db = csv.DictReader(zipcsv, fieldnames=self.zip_headers,
+                                         dialect=dialect)
             for zipcode in zipcodes_db:
-                zipcode.update({"lat": float(zipcode.get("lat")), "lon": float(zipcode.get("lon"))})
+                zipcode.update({"lat": float(zipcode.get("lat")),
+                                "lon": float(zipcode.get("lon"))})
                 self.zipcodes.append(zipcode)
 
-
     def get_db(self):
+        """ Empty docstring. """
         self.zips_for_stations()
         return self.stations
 
@@ -59,42 +73,84 @@ class StationsDB(object):
 
     def zip_to_station(self, zipcode):
         """ Find the station closest to the zipcode """
-        best_dist, best_sta = 99999999,''
-        for sta_id, sta in self.stations.items():
-            tlat, tlon = sta.get('lat'), sta.get('lon')
-            distance = ((tlat-zipcode.get('lat'))**2 + (tlon-zipcode.get('lon'))**2)**0.5
+        best_dist, best_sta = 99999999, ''
+        for sta_id, station in self.stations.items():
+            tlat, tlon = station.get('lat'), station.get('lon')
+            distance = ((tlat-zipcode.get('lat'))**2 +
+                        (tlon-zipcode.get('lon'))**2)**0.5
             if distance < best_dist:
                 best_dist, best_sta = distance, sta_id
-        logger.debug("zipcode: %s, station:%s", zipcode.get("zip", "no zipcode"), best_sta)
+        logger.debug("zipcode: %s, station:%s",
+                     zipcode.get("zip", "no zipcode"), best_sta)
         return best_sta
 
     def zip_for_station(self, zipcode):
         """ Attach the zipcode to the station closest to it. """
         station = self.zip_to_station(zipcode)
         self.stations[station]['zipcodes'].append(zipcode.get("zip"))
+        logger.debug(self.stations[station].get('zipcodes', 'no zipcodes'))
 
-    def _degmin_to_decdeg(self, dm_str):
-        """Return decimal representation of DMS """
-        dms_str = re.sub(r'\s', '', dm_str)
-        if re.match('[swSW]', dms_str):
-            sign = -1
+    def _coord_to_decdeg(self, coord_str):
+        """ Return decimal representation of DMS. """
+        coord = Coord(coord_str)
+        return coord.decimal()
+
+class Coord(object):
+
+    def __init__(self, coord_str):
+        logger.debug(coord_str)
+        self.string = coord_str.strip()
+        self.chunks = (["degree",0.0], ["minute", 0.0], ["second", 0.0], ["frac_seconds", 0.0])
+        self._strip()
+        self._sign()
+
+    def _strip(self):
+        self.string = re.sub(r'\s', '', self.string)
+
+    def _sign(self):
+        if re.search('[sw]', self.string, re.I):
+            logger.debug("coord: %s, sign: -")
+            self.sign = -1
         else:
-            sign = 1
-        (degree, minute, junk) = re.split('\D+', dms_str, maxsplit=2)
-        return sign * (int(degree) + float(minute) / 60 / 36000)
+            logger.debug("coord: %s, sign: +")
+            self.sign = 1
+
+    def _split_degminsec(self):
+        diced = re.split('\D+', self.string, maxsplit=4)
+        logger.debug("diced coord: %s", diced)
+        count = len(self.chunks)
+        if len(diced)-len(self.chunks) < 0:
+            count = len(diced)
+        i = 0
+        while i < count:
+            self.chunks[i][1] = diced[i]
+            i+=1
+        logger.debug("chuncks of coord: %s", self.chunks)
+
+    def decimal(self):
+        self._split_degminsec()
+        cdict = dict(self.chunks)
+        logger.debug("chuncks dict: %s", cdict)
+        return self.sign * (int(cdict["degree"] or 0) + float(cdict["minute"] or 0) / 60 + float(cdict["second"] or 0) / 3600 + float(cdict["frac_seconds"] or 0) / 36000)
 
 
 if __name__ == '__main__':
     import sys
-    stations_filename = sys.argv[1]
-    zipcodes_filename = sys.argv[2]
+    sta_filename = sys.argv[1]
+    zip_filename = sys.argv[2]
     output_filename = sys.argv[3]
-    stations_db = StationsDB(stations_filename, zipcodes_filename)
+    sta_db = StationsDB(sta_filename, zip_filename).get_db()
     with open(output_filename, 'w') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=list(stations_db.station_headers)+['zipcodes'])
+        writer = csv.DictWriter(csvfile,
+                                fieldnames=list(sta_db.values()[0].keys()))
         writer.writeheader()
-        for station in stations_db.get_db().values():
-            #print(station)
-            station["zipcodes"] = " ".join(station.get("zipcodes"))
-            writer.writerow(station)
+        for sta in sta_db.values():
+            logger.debug("final zipcodes for %s, %s, %s: %s",
+                         sta.get("ind"),
+                         sta.get("stabv"),
+                         sta.get("co"),
+                         len( sta.get('zipcodes', ['no zipcodes']) ) )
+            sta["zipcodes"] = ";".join(sta.get("zipcodes"))
+            logger.debug("zipcodes: %s", sta.get("zipcodes"))
+            writer.writerow(sta)
     print("wrote to file: %s" % output_filename)

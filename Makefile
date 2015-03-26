@@ -44,7 +44,7 @@ all: $(BINTARGETS) $(SBINTARGETS) $(SYSCONFTARGETS) $(DATATARGETS)
 
 firefox: $(BINDIR)firefox-anon $(BINDIR)firefox-nono $(BINDIR)firefox-default $(BINDIR)firefox-work $(BINDIR)firefox-personal
 
-noaa: $(BINDIR)conky-noaa.py $(BINDIR)noaa.py: $(DATADIR)noaa/stations-with-zips.csv
+noaa: $(BINDIR)conky-noaa.py $(BINDIR)noaa.py $(DATADIR)noaa/stations-with-zips.csv
 
 xsl: $(BINDIR)prettyxml $(DATADIR)xsl/prettyxml.xsl
 
@@ -79,8 +79,11 @@ $(DARKICETARGETS): $(BINDIR)darkice-source
 $(BINDIR)conky-noaa.py $(BINDIR)noaa.py: $(DATADIR)noaa/stations-with-zips.csv
 	ln -sf $(subst $(BINDIR), $(SRCDIR), $@) $@
 
-$(DATADIR)noaa/stations-with-zips.csv: $(DATADIR)noaa/
+$(DATADIR)noaa/stations-with-zips.csv: $(DATADIR)noaa
 	ln -sf $(subst $(DATADIR), $(SRCDIR), $@) $@
+
+$(DATADIR)noaa:
+	mkdir -p $@
 
 $(BINDIR)prettyxml: $(DATADIR)xsl/
 	ln -sf $(subst $(DATADIR), $(SRCDIR), $@) $@

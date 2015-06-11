@@ -13,9 +13,13 @@ if [[ ${#*} != 2 ]];then
 	exit 1
 fi
 
-stylesheet=~/.bin/share/prettyxml.xsl
-output=$2
+stylesheet=$HOME/dev/scripts/xsl/prettyxml.xsl
+if [ -z $2 ]; then
+	output=""
+else
+	output="-o $2"
+fi
 xml=$1
-xsltproc -o $output $stylesheet $xml
+xsltproc $output $stylesheet $xml
 echo "done"
 exit 0

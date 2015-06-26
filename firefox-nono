@@ -5,7 +5,7 @@
 # No, no plugins. Run a profile with no plugins.
 
 today=`date --date='Today 00:00:00' +%s`
-profile="junk"
+profile="nono"
 app_exec="firefox"
 app="$app_exec-$profile"
 # arguments for the initial launching of this profile of firefox

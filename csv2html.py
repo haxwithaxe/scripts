@@ -44,7 +44,7 @@ def make_header(reader):
     headers = []
     for f in reader.fieldnames:
         headers.append(th(f))
-    return tr(headers*)
+    return tr(*headers)
 
 def make_contents(reader):
     body = []

@@ -1,5 +1,8 @@
 #/bin/sh
-OUTPATH=${PRNSCRN_OUTPATH:-$HOME/Dropbox/Public}
+# Copyright (c) 2015 haxwithaxe (spam@haxwithaxe.net)
+# License: GPLv3
+
+OUTPATH=${PRNSCRN_OUTPATH:-$HOME}
 IMGPATH=${PRNSCRN_IMG:-"screenshot-`date +%Y%m%d-%H%M%S`.png"}
 IMG=$OUTPATH/$IMGPATH
 

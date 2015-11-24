@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+__author__ = 'haxwithaxe (spam@haxwithaxe.net)'
+__copyright__ = 'Copyright (c) 2015 haxwithaxe'
+__license__ = 'GPLv3'
+
+
+import http.server
+import socketserver
+
+
+def make_server(address, port):
+    """ Make an HTTP server that does basic directory indexing and get/head request handling. 
+    
+    Note:
+        Subclass http.server.SimpleHTTPRequestHandler to modify the behavior and replace http.server.SimpleHTTPRequestHandler with the subclass in the socketserver.TCPServer call.
+        The most likely relevant method in http.server.SimpleHTTPRequestHandler is do_GET().
+
+    """
+    return socketserver.TCPServer((address, port), http.server.SimpleHTTPRequestHandler)
+
+
+if __name__ == '__main__':
+    import argparse
+    import os
+    parser = argparse.ArgumentParser(description='Serve files over HTTP.')
+    parser.add_argument('-p', '--port', type=int, default=8000, help='The port for the server to listen on. Defaults to 8000.')
+    parser.add_argument('-a', '--address', default='', help='The address to bind to. Defaults to 0.0.0.0.')
+    parser.add_argument('-d', '--pwd', default=None, help="The directory to use as the webroot. Defaults to the current directory.")
+    args = parser.parse_args()
+    if args.pwd:
+        os.chdir(args.pwd)
+    server = make_server(args.address, args.port)
+    server.serve_forever()

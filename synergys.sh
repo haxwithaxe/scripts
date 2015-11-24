@@ -1,7 +1,7 @@
 #!/bin/bash
 # A mechanism to pass arbitrary condiments
 #  and launch synergys with different configs
-# Copyright haxwithaxe 2015
+# Copyright (c) 2015 haxwithaxe
 # License: GPLv3
 
 set -e

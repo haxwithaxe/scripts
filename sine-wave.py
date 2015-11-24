@@ -1,6 +1,12 @@
-# create a synthetic 'sine wave' wave file with
-# set frequency and length
-# tested with Python 2.5.4 and Python 3.1.1 by vegaseat
+""" Create a synthetic 'sine wave' wave file.
+
+Create a synthetic 'sine wave' wave file with set frequency and length
+
+Tested with Python 2.5.4 and Python 3.1.1
+
+"""
+
+__author__ = "vegaseat"
 
 import math
 import wave

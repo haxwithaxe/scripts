@@ -1,25 +1,30 @@
-#!/bin/sh
+#!/bin/bash
 
-## Contents of prettyxml.xsl
-#<?xml version="1.0" encoding="utf-8" ?>
-#<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-#	<xsl:output method="xml" encoding="UTF-8" omit-xml-declaration="yes"/>
-#</xsl:stylesheet>
+USAGE="$0 <input file> <output file>"
+STYLESHEET=/tmp/prettyxml.xsl
 
-usage="$0 <input file> <output file>"
+# Create prettyxml.xsl
+cat - > $STYLESHEET <<EOF
+<?xml version="1.0" encoding="utf-8" ?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+	<xsl:output method="xml" encoding="UTF-8" omit-xml-declaration="yes"/>
+</xsl:stylesheet>
+EOF
 
-if [[ ${#*} != 2 ]];then
-	echo $usage
+SRC=$1
+DEST=$2
+
+if [[ -z $SRC ]];then
+	echo $USAGE
 	exit 1
 fi
-
-stylesheet=$HOME/dev/scripts/xsl/prettyxml.xsl
-if [ -z $2 ]; then
-	output=""
-else
-	output="-o $2"
+if [[ -n $DEST ]]; then
+	DEST="-o $DEST"
 fi
-xml=$1
-xsltproc $output $stylesheet $xml
+
+xsltproc $DEST $STYLESHEET $SRC
 echo "done"
+
+rm $STYLESHEET
+
 exit 0

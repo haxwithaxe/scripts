@@ -1,0 +1,4 @@
+#!/bin/bash
+
+TTL=${1:-/dev/ttyUSB0}
+grig -m 122 -r $TTL -s 38400

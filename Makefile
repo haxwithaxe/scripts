@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 
-.PHONY: all firefox-work firefox-personal firefox jackd noaa xsl
+.PHONY: all ham firefox noaa xsl
 .DEFAULT: all
 
 
@@ -19,36 +19,21 @@ SBINDIR = $(DESTDIR)$(sbindir)
 SYSCONFDIR = $(DESTDIR)$(sysconfdir)
 DATADIR = $(DESTDIR)$(datadir)
 
-BINTARGETS ?= $(sort $(foreach bin, $(shell cat $(SRCDIR)bin.lst), $(BINDIR)$(bin)))
-SBINTARGETS ?= $(sort $(foreach sbin, $(shell cat $(SRCDIR)sbin.lst), $(SBINDIR)$(sbin)))
-SYSCONFTARGETS ?= $(sort $(foreach etc, $(shell cat $(SRCDIR)etc.lst), $(SYSCONFDIR)$(etc)))
-DATATARGETS ?= $(sort $(foreach share, $(shell cat $(SRCDIR)share.lst), $(DATADIR)$(share)))
 DARKICETARGETS ?= $(BINDIR)darkice-media $(BINDIR)darkice-ft857d $(BINDIR)darkice-rtlsdr $(BINDIR)darkice-hackrf
 
-$(BINDIR) $(SBINDIR) $(SYSCONFDIR) $(DATADIR) $(DESTDIR):
-	mkdir -p $@
+DIRS = $(DESTDIR) $(BINDIR) $(SBINDIR) $(SYSCONFDIR) $(DATADIR) $(DATADIR)noaa $(DATADIR)xsl
 
-$(BINTARGETS): $(BINDIR)
-	ln -sf $(subst $(BINDIR), $(SRCDIR), $@) $@
+all: firefox noaa xsl ham
 
-$(SBINTARGETS): $(SBINDIR)
-	ln -sf $(subst $(SBINDIR), $(SRCDIR), $@) $@
+ham: $(BINDIR)grig-ft857d
 
-$(SYSCONFTARGETS): $(SYSCONFDIR)
-	ln -sf $(subst $(SYSCONFDIR), $(SRCDIR), $@) $@
-
-$(DATATARGETS): $(DATADIR)
-	ln -sf $(subst $(DATADIR), $(SRCDIR), $@) $@
-
-all: $(BINTARGETS) $(SBINTARGETS) $(SYSCONFTARGETS) $(DATATARGETS)
-
-firefox: $(BINDIR)firefox-anon $(BINDIR)firefox-nono $(BINDIR)firefox-default $(BINDIR)firefox-work $(BINDIR)firefox-personal
+firefox: $(BINDIR)firefox-anon $(BINDIR)firefox-nono $(BINDIR)firefox-work $(BINDIR)firefox-personal
 
 noaa: $(BINDIR)conky-noaa.py $(BINDIR)noaa.py $(DATADIR)noaa/stations-with-zips.csv
 
 xsl: $(BINDIR)prettyxml $(DATADIR)xsl/prettyxml.xsl
 
-jackd: $(BINDIR)jackd-audioadapters
+firefox-%: $(BIINDIR)firefox-%
 
 $(BINDIR)firefox-anon:
 	ln -sf $(SRCDIR)firefox-anon $(BINDIR)firefox-anon
@@ -56,41 +41,37 @@ $(BINDIR)firefox-anon:
 $(BINDIR)firefox-nono:
 	ln -sf $(SRCDIR)firefox-nono $(BINDIR)firefox-nono
 
-$(BINDIR)firefox-default:
-	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-default
+$(BINDIR)firefox-%:
+	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-$*
 
-# depend on this for firefox-personal
-$(BINDIR)firefox-work:
-	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-work
+$(BINDIR)darkice-source:
+	ln -sf $(SRCDIR)darkice-source $@
 
-# depend on this for firefox-work
-$(BINDIR)firefox-personal:
-	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-personal
-
-firefox-work: firefox
-	ln -sf $(SRCDIR)firefox-default $(BINDIR)firefox-work
-
-firefox-personal: firefox
-	ln -sf $(SRCDIR)firefox-default $(BINDIR)firefox-personal
-
-$(DARKICETARGETS): $(BINDIR)darkice-source
+$(BINDIR)darkice-%: $(BINDIR)darkice-source
 	ln -sf $(BINDIR)darkice-source $@
 
+$(BINDIR)prettyxml: $(DATADIR)xsl/prettyxml.xsl
+
+$(DATADIR)xsl/prettyxml.xsl: $(DATADIR)xsl
+
 $(BINDIR)conky-noaa.py $(BINDIR)noaa.py: $(DATADIR)noaa/stations-with-zips.csv
-	ln -sf $(subst $(BINDIR), $(SRCDIR), $@) $@
 
-$(DATADIR)noaa/stations-with-zips.csv: $(DATADIR)noaa
-	ln -sf $(subst $(DATADIR), $(SRCDIR), $@) $@
-
-$(DATADIR)noaa:
-	mkdir -p $@
-
-$(BINDIR)prettyxml: $(DATADIR)xsl/
-	ln -sf $(subst $(DATADIR), $(SRCDIR), $@) $@
-
-$(BINDIR)jackd-audioadapters:
-	ln -sf $(subst $(BINDIR), $(SRCDIR), $@) $@
+$(DATADIR)noaa/stations-with-zips.csv: $(SRCDIR)noaa/stations-with-zipcodes.csv $(DATADIR)noaa
 
 $(SRCDIR)noaa/stations-with-zipcodes.csv:
 	python $(SRCDIR)noaa_stations_with_zips.py noaa/noaa_stations.csv  noaa/zips.csv $@
 
+$(BINDIR)%:
+	ln -sf $(SRCDIR)$* $@
+
+$(SBINDIR)%:
+	ln -sf $(SRCDIR)$* $@
+
+$(SYSCONFDIR)%:
+	ln -sf $(SRCDIR)$* $@
+
+$(DATADIR)%:
+	ln -sf $(SRCDIR)$* $@
+
+$(DIRS):
+	mkdir -p $@

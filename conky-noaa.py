@@ -4,7 +4,6 @@
 Returns a string formatted for conky. '''
 
 __authors__ = ['haxwithaxe me@haxwithaxe.net']
-
 __license__ = 'GPLv3'
 
 import sys
@@ -53,11 +52,13 @@ import argparse
     'windchill_f': u'41',
     'windchill_string': u'41 F (5 C)'}'''
 
+
 def get_cvs_dict(filename, keys):
     csvfile = open('station-locations.csv', 'r')
     csv_lines = csv_file.readlines()
     csv_file.close()
     return csv.DictReader(csv_lines, keys)
+
 
 def address2station(loc, stas, zips):
     """ Translate full location into Station tuple by closest match
@@ -77,6 +78,7 @@ def address2station(loc, stas, zips):
             best, best_sta = distance, sta
     return best_sta
 
+
 def handle_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', dest='station', default=None, required=False)
@@ -85,6 +87,7 @@ def handle_args(argv):
     parser.add_argument('-j', dest='zipcodedb', default=None, required=False)
     args = parser.parse_args()
     return args
+
 
 def get_weather_data(station=None, location=None, stations=None, zipcodes=None):
     try:
@@ -95,6 +98,7 @@ def get_weather_data(station=None, location=None, stations=None, zipcodes=None):
     except:
         print('weather error')
         sys.exit(0)
+
 
 def make_message(noaa_result):
     wmsg = []
@@ -112,11 +116,8 @@ def make_message(noaa_result):
 
 
 if __name__ == '__main__':
-    # parse args
     args = handle_args(sys.argv)
-
     # get weather data from NOAA based on zipcode, address, or station ID
     wdata = get_weather_data(args.station, args.location, args.stationdb, args.zipcodedb)
     wmsg = make_message(wdata)
     print(wmsg)
-

@@ -1,25 +1,17 @@
 #!/bin/bash
 
 url=$1
-
 cachefile="/var/cache/ipv4addr.cache"
 
 if [ -e $cachefile ] ;then
-
         IPCACHE=`cat ${cachefile}`
-
 else
-
         IPCACHE=''
-
 fi
 
 IPNOW=`wget -q http://www.whatismyip.org/ -O -`
 
 if [[ $IPCACHE != $IPNOW ]];then
-
         wget -q "http://freedns.afraid.org/dynamic/update.php?${url}" -O - 2>&1 > /dev/null
-
         echo $IPNOW > $cachefile
-
 fi

@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright 2016 haxwithaxe
+# License: GPLv3
 # darkice-<source> - create a darkice instance with the config matching the
 # name used to launch this script.
 

@@ -2,12 +2,8 @@
 
 # check if json is well formed (ala xmlwf)
 
-import json,sys
+import json
+import sys
 
-def file2str(fname):
-	fobj = open(fname,'r')
-	ret = fobj.read()
-	fobj.close()
-	return ret
-
-print(json.loads(file2str(sys.argv[1])))
+with open(sys.argv[1], 'r') as fobj:
+	json.load(fobj)

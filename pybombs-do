@@ -1,0 +1,7 @@
+#!/bin/bash
+
+pybombs_root=$HOME/dev/pybombs-root
+
+. $pybombs_root/setup_env.sh
+
+$@

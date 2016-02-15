@@ -1,0 +1,3 @@
+#!/bin/bash
+
+pybombs-do gnuradio-companion $@

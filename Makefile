@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 
-.PHONY: all ham firefox noaa xsl
+.PHONY: all ham firefox noaa xrandr-setup xsl
 .DEFAULT: all
 
 
@@ -32,6 +32,8 @@ firefox: $(BINDIR)firefox-anon $(BINDIR)firefox-nono $(BINDIR)firefox-work $(BIN
 noaa: $(BINDIR)conky-noaa.py $(BINDIR)noaa.py $(DATADIR)noaa/stations-with-zips.csv
 
 xsl: $(BINDIR)prettyxml $(DATADIR)xsl/prettyxml.xsl
+
+xrandr-setup: $(BINDIR)xrandr-setup
 
 firefox-%: $(BIINDIR)firefox-%
 

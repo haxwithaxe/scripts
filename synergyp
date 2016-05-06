@@ -9,23 +9,13 @@
 set -e
 
 synergys=/usr/bin/synergys
-synergyc=/usr/bin/synergyc
 config_dir=$HOME/.config/synergy
-default_profile=$config_dir/default.conf
+default_profile=default
 this_script=$(basename $0)
-synergy_bin=${this_script//p/}
-case "$synergy_bin" in
-	synergyc)
-		synergy="configurable_synergyc"
-		;;
-	synergys)
-		synergy=$synergys
-		;;
-	*)
-		echo "ERROR: $synergy_bin is not a valid executable."
-		;;
-esac
+synergy=synergys
+client=
 
+DEBUG=/dev/null
 
 if ! [ -d $config_dir ] ;then
 	mkdir -p $config_dir
@@ -35,7 +25,6 @@ usage(){
 	cat - >&2 <<EOM
 $(basename $0) [-p|--profile <profile>] [-d|--default <profile>] [-c|--config <config file>] [-h|--help]
 EOM
-
 }
 
 set_profile(){
@@ -49,27 +38,43 @@ set_default(){
 }
 
 kill_synergy(){
-	killall $synergy_bin || killall -9 $synergy_bin || true
+	(killall $synergy || killall -9 $synergy || echo $synergy was not running) 2>/dev/null
+}
+
+kill_client(){
+	ssh $client -- "killall synergyc || killall -9 synergyc || echo synergyc was not running on $client" 2>/dev/null || echo "Could not connect to $client"
 }
 
 use_profile(){
-	kill_synergy
-	$synergy -c $config_dir/${profile}.conf
+	kill_synergy > $DEBUG
+	$synergy -c $config_dir/${profile}.conf > $DEBUG && echo "synergys is running with profile \"$profile\""
+	start_client
 }
 
 use_default(){
-	kill_synergy
-	$synergy -c $default_profile
+	profile=$default_profile
+	use_profile
 }
 
 list_profiles(){
-	for p in `ls $config_dir/*.conf`; do
+	for p in $(ls $config_dir/*.conf); do
 		echo $(basename $p .conf)
 	done
 }
 
 validate_profile(){
 	if [ ! -f "$config_dir/${profile}.conf" ]; then
+		if [ -f "$config_dir/aliases" ]; then
+			for re in $(cat "$config_dir/aliases"); do
+				match=$(awk "$(cut -d'=' -f2- <<< $re) {print \$0}" <<< $profile)
+				if [[ "$match" != "" ]]; then
+					client=$profile
+					profile=$(cut -d'=' -f1 <<< $re)
+					validate_profile
+					return 0
+				fi
+			done
+		fi
 		echo "ERROR: "${profile}" is not an existing profile." 1>&2
 		usage
 		exit 1
@@ -92,19 +97,32 @@ validate_config(){
 	fi
 }
 
-configurable_synergyc(){
-	. $2 #dirty hack to load variables from a "config" file.
-	display=${display:-:0.0}
-	if [ -z $server ]; then
-		echo "ERROR: A server must be specified." >&2
-		false
-	elif [[ "$server" == "use argument" ]]; then
-		server=""
-	fi
-	$synergyc --display $display $synergy_args $server
+stop_all(){
+	kill_synergy
+	kill_client
 }
 
-while getopts ":-:p:d:c:lh" opt;do
+start_client(){
+	server_ip=$(ip addr show | awk '/inet .* global/ { split($2, a,"/"); print a[1] }')
+	if [ -z "$client" ]; then
+		client=$profile
+	fi
+	if [ -n $server_ip ]; then
+		kill_client > $DEBUG
+		stderr=$(ssh $client -- "synergyc --display :0.0 $server_ip" 3>&1 2>&3 1>/dev/null)
+		if [[ $? -ne 0 ]]; then
+			echo $stderr
+		else
+			echo "synergyc is running on $client"
+		fi
+	else
+		echo "Couldn\'t determine the IP address of this machine." >&2
+		exit 1
+	fi
+}
+
+
+while getopts ":-:p:d:c:lkh" opt; do
 	case "$opt" in
 		-)
 			case "$OPTARG" in
@@ -112,7 +130,6 @@ while getopts ":-:p:d:c:lh" opt;do
 					profile="${!OPTIND}"
 					[[ "$profile" == "" ]] && usage && false
 					OPTIND=$(( $OPTIND + 1 )) 
-					validate_profile
 					;;
 				default)
 					default="${!OPTIND}"
@@ -128,16 +145,18 @@ while getopts ":-:p:d:c:lh" opt;do
 							OPTIND=$(( $OPTIND + 1 ))
 							;;
 					esac
-					validate_default
 					;;
 				config)
 					config="${!OPTIND}"
 					OPTIND=$(( $OPTIND + 1 ))
-					validate_config
 					;;
 				help)
 					usage
 					exit 1
+					;;
+				host)
+					client="${!OPTIND}"
+					OPTIND=$(( $OPTIND + 1 ))
 					;;
 				*)
 					synergy_args="$synergy_args --$OPTARG ${!OPTIND}"
@@ -147,17 +166,14 @@ while getopts ":-:p:d:c:lh" opt;do
 		p)
 			[[ "$OPTARG" == "" ]] && usage && false
 			profile=$OPTARG
-			validate_profile
 			;;
 		d)
 			[[ "$OPTARG" == "" ]] && usage && false
 			default=$OPTARG
-			validate_default
             ;;
 		c)
 			[[ "$OPTARG" == "" ]] && usage && false
 			config=$OPTARG
-			validate_config
             ;;
 		l)
 			list_profiles
@@ -167,23 +183,39 @@ while getopts ":-:p:d:c:lh" opt;do
 			usage
 			exit 1
             ;;
+		k)
+			stop_all=true
+			;;
 		*)
 			synergy_args="${synergy_args} $OPTARG"
 			;;
 	esac
 done
 
-if [ "$default" = "default" ] && [ -n "$config" ] ;then
-	profile=$default
-	set_profile
-elif [ -n "$default" ] ;then
-	profile=$default
-	set_default
-elif [ -n "$profile" ] && [ -n "$config" ] ;then
-	set_profile
-elif [ -n "$profile" ] ;then
-	use_profile
-elif [ -n "$config" ] ;then
+if [ -n "$config" ]; then
+	validate_config
+fi
+
+if [ -n "$default" ]; then
+	validate_default
+	if [ "$default" = "default" ] && [ -n "$config" ]; then
+		profile=$default
+		set_profile
+	else
+		profile=$default
+		set_default
+	fi
+elif [ -n "$profile" ]; then
+	validate_profile
+	if [ -n "$config" ]; then
+		set_profile
+	elif [ $stop_all ]; then
+		kill_synergy
+		kill_client
+	else
+		use_profile
+	fi
+elif [ -n "$config" ]; then
 	profile=tmp
 	set_profile
 	use_profile
@@ -192,4 +224,3 @@ elif [ -n "$config" ] ;then
 else
 	use_default
 fi
-

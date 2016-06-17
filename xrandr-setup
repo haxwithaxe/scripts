@@ -1,11 +1,84 @@
 #!/bin/bash
 
-primary=eDP1
-secondary=$(xrandr | grep ' connected' | grep -v $primary | cut -d' ' -f1)
-while [[ "$secondary" == "" ]]; do
+set -e
+
+export DISPLAY=${DISPLAY:-":0.0"}
+export XAUTHORITY="$HOME/.Xauthority"
+
+PRIMARY=eDP1
+SECONDARY=DP2-1
+TERTIARY=DP2-2
+
+
+LID_OPEN=true
+
+case $(sed 's/.*\:[[:space:]]*//' /proc/acpi/button/lid/LID/state) in
+	open)
+		LID_OPEN=true
+		;;
+	closed)
+		LID_OPEN=false
+		;;
+esac
+
+DOCKED=false
+case $(cat /sys/devices/platform/dock.0/docked) in
+	1)
+		DOCKED=true
+		;;
+	0)
+		DOCKED=false
+		;;
+esac
+
+
+
+find_displays(){
+	xrandr | grep ' connected' | cut -d' ' -f1
+}
+
+primary=$PRIMARY
+displays=$(find_displays)
+while [[ "$displays" == "" ]]; do
 	sleep 1
-	secondary=$(xrandr | grep ' connected' | grep -v $primary | cut -d' ' -f1)
+	displays=$(find_displays)
 done
-echo secondary display is: $secondary
-xrandr --output $secondary --auto
-xrandr --output $secondary --right-of $primary
+
+IFS=' ' read -r -a display_array <<< $displays
+echo available displays are: ${display_array[*]}
+for d in ${display_array[@]}; do
+	case $d in
+		$PRIMARY)
+			primary=$PRIMARY
+			;;
+		$SECONDARY)
+			secondary=$SECONDARY
+			;;
+		$TERTIARY)
+			tertiary=$TERTIARY
+			;;
+	esac
+done
+
+
+if ! $DOCKED; then
+	echo not docked
+	xrandr --output $primary --auto
+	exit 0
+fi
+
+if [[ -n $primary ]] && [[ -z $secondary ]] && [[ -z $tertiary ]]; then
+	xrandr --output $primary --auto
+elif [[ -n $primary ]] && [[ -n $secondary ]] && [[ -z $tertiary ]]; then
+	xrandr --output $secondary --auto
+	xrandr --output $secondary --right-of $primary
+elif [[ -n $primary ]] && [[ -n $secondary ]] && [[ -n $tertiary ]]; then
+	xrandr --output $secondary --auto
+	xrandr --output $secondary --right-of $primary
+	xrandr --output $tertiary --auto
+	xrandr --output $tertiary --right-of $secondary
+fi
+if ! $LID_OPEN; then
+	echo lid closed
+	xrandr --output $primary --off
+fi

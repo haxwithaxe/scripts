@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+import socket
+import sys
+
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+server_address = sys.argv[1]
+message = sys.stdin.read()
+
+try:
+    sock.connect(server_address)
+except socket.error as err:
+    print(err, file=sys.stderr)
+    sys.exit(1)
+with sock as s:
+	s.sendall(message.encode())
+	print(s.recv(len(message)*8), file=sys.stderr)

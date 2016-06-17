@@ -19,11 +19,19 @@ SBINDIR = $(DESTDIR)$(sbindir)
 SYSCONFDIR = $(DESTDIR)$(sysconfdir)
 DATADIR = $(DESTDIR)$(datadir)
 
+ACPI_EVENTS = /etc/acpi/events/on_dock \
+			  /etc/acpi/events/on_undock \
+			  /etc/acpi/events/on_lid_open \
+			  /etc/acpi/events/on_lid_close
+
+
 DARKICETARGETS ?= $(BINDIR)darkice-media $(BINDIR)darkice-ft857d $(BINDIR)darkice-rtlsdr $(BINDIR)darkice-hackrf
 
 DIRS = $(DESTDIR) $(BINDIR) $(SBINDIR) $(SYSCONFDIR) $(DATADIR) $(DATADIR)noaa $(DATADIR)xsl
 
-all: firefox noaa xsl ham
+all: firefox noaa xsl ham acpi
+
+acpi: $(BINDIR)acpi-listener
 
 ham: $(BINDIR)grig-ft857d
 
@@ -59,6 +67,11 @@ $(DATADIR)xsl/prettyxml.xsl: $(DATADIR)xsl
 $(BINDIR)conky-noaa.py $(BINDIR)noaa.py: $(DATADIR)noaa/stations-with-zips.csv
 
 $(DATADIR)noaa/stations-with-zips.csv: $(SRCDIR)noaa/stations-with-zipcodes.csv $(DATADIR)noaa
+
+$(BINDIR)acpi-listener: $(BINDIR)tosocket $(ACPI_EVENTS)
+
+$(ACPI_EVENTS): /etc/acpi/events
+	ln -sf $(SRCDIR)acpi-events/$* $@
 
 $(SRCDIR)noaa/stations-with-zipcodes.csv:
 	python $(SRCDIR)noaa_stations_with_zips.py noaa/noaa_stations.csv  noaa/zips.csv $@

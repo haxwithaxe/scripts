@@ -1,0 +1,2 @@
+event=button/lid LID close
+action=printf "button/lid LID close" | /usr/local/bin/tosocket /tmp/acpi.sock

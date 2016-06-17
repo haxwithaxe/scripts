@@ -1,0 +1,2 @@
+event=button/lid LID open
+action=printf "button/lid LID open" | /usr/local/bin/tosocket /tmp/acpi.sock

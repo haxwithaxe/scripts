@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+
+import logging
+import socket
+import subprocess
+import stat
+import os
+import time
+
+SOCKET_PATH = '/tmp/acpi.sock'
+COMMANDS = ('xrandr-setup', 'hello')
+
+logging.basicConfig(level=logging.ERROR)
+
+class ACPIListener:
+
+	def __init__(self, path, hooks):
+		self.path = path
+		self.event_hooks = hooks
+		if os.path.exists(self.path):
+			os.remove(self.path)
+		self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+		self.socket.bind(self.path)
+		os.chmod(self.path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+
+	def serve_forever(self):
+		with self.socket as sock:
+			sock.listen(1)
+			while True:
+				connection, client_address = sock.accept()
+				buff = []
+				data = connection.recv(1024)
+				if data:
+					self.handle(data.decode())
+					connection.sendall( b'recieved: %s' % data )
+
+	def handle(self, event):
+		if not event:
+			return 
+		if event in self.event_hooks:
+			self.event_hooks[self.event_hooks.index(event)](event)
+			logging.debug( 'handled event: %s', event )
+		else:
+			logging.debug('event %s not handled', event)
+ 
+
+class Hook:
+
+	name = None
+	command = 'echo no command'
+
+	def __call__(self, event_):
+		self.do_action()
+		logging.debug('Hook: %s', self.name)
+
+	def do_action(self):
+		process = subprocess.Popen(self.command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+		try:
+			stdout, stderr = process.communicate()
+		except subprocess.CalledProcessError as err:
+			stdout = err.output
+			stderr = -1
+		logging.debug( 'Command: %s\nSTDOUT: %s\nSTDERR: %s', self.command, stdout, stderr )
+
+	def __eq__(self, event):
+		 return self.name in event
+
+
+class Lid(Hook):
+
+	name = 'button/lid LID'
+	command = '/usr/local/bin/xrandr-setup'
+
+class Dock(Hook):
+
+	name = 'docked'
+	command = '/usr/local/bin/xrandr-setup'
+
+	def __call__(self, event):
+		time.sleep(1)
+		super().__call__(event)
+
+if __name__ == '__main__':
+	server = ACPIListener(SOCKET_PATH, [Lid(), Dock()])
+	server.serve_forever()

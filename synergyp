@@ -107,7 +107,7 @@ start_client(){
 	if [ -z "$client" ]; then
 		client=$profile
 	fi
-	if [ -n $server_ip ]; then
+	if [ -n "$server_ip" ]; then
 		kill_client > $DEBUG
 		stderr=$(ssh $client -- "synergyc --display :0.0 $server_ip" 3>&1 2>&3 1>/dev/null)
 		if [[ $? -ne 0 ]]; then

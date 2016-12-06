@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 
-import logging
+import os
 import socket
 import subprocess
 import stat
-import os
+import syslog
 import time
+
+DEBUG = True
 
 SOCKET_PATH = '/tmp/acpi.sock'
 COMMANDS = ('xrandr-setup', 'hello')
 
-logging.basicConfig(level=logging.ERROR)
+def log( level, msg, *parts):
+	syslog.syslog(level,  msg % parts)
+
+def debug( msg, *parts):
+	if DEBUG:
+		log(syslog.LOG_DEBUG, msg, *parts)
+
 
 class ACPIListener:
 
@@ -39,9 +47,9 @@ class ACPIListener:
 			return 
 		if event in self.event_hooks:
 			self.event_hooks[self.event_hooks.index(event)](event)
-			logging.debug( 'handled event: %s', event )
+			debug( 'handled event: %s', event )
 		else:
-			logging.debug('event %s not handled', event)
+			debug('event %s not handled', event)
  
 
 class Hook:
@@ -51,7 +59,7 @@ class Hook:
 
 	def __call__(self, event_):
 		self.do_action()
-		logging.debug('Hook: %s', self.name)
+		debug('Hook: %s', self.name)
 
 	def do_action(self):
 		process = subprocess.Popen(self.command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -60,7 +68,7 @@ class Hook:
 		except subprocess.CalledProcessError as err:
 			stdout = err.output
 			stderr = -1
-		logging.debug( 'Command: %s\nSTDOUT: %s\nSTDERR: %s', self.command, stdout, stderr )
+		debug('Command: %s\nSTDOUT: %s\nSTDERR: %s', self.command, stdout, stderr)
 
 	def __eq__(self, event):
 		 return self.name in event

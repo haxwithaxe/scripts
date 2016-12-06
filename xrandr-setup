@@ -1,16 +1,14 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 export DISPLAY=${DISPLAY:-":0.0"}
 export XAUTHORITY="$HOME/.Xauthority"
 
-PRIMARY=eDP1
-SECONDARY=DP2-1
-TERTIARY=DP2-2
+PRIMARY=eDP-1
+SECONDARY=DP-2-1
+TERTIARY=DP-2-2
 
-
-LID_OPEN=true
 
 case $(sed 's/.*\:[[:space:]]*//' /proc/acpi/button/lid/LID/state) in
 	open)
@@ -19,14 +17,23 @@ case $(sed 's/.*\:[[:space:]]*//' /proc/acpi/button/lid/LID/state) in
 	closed)
 		LID_OPEN=false
 		;;
+	*)
+		# Fail safe
+		LID_OPEN=true
+		;;
 esac
 
-DOCKED=false
 case $(cat /sys/devices/platform/dock.0/docked) in
 	1)
+		echo docked
 		DOCKED=true
 		;;
 	0)
+		echo undocked
+		DOCKED=false
+		;;
+	*)
+		# Fail safe
 		DOCKED=false
 		;;
 esac
@@ -39,6 +46,7 @@ find_displays(){
 
 primary=$PRIMARY
 displays=$(find_displays)
+# Try to find connected displays every 1 second until one or more are found.
 while [[ "$displays" == "" ]]; do
 	sleep 1
 	displays=$(find_displays)
@@ -57,28 +65,29 @@ for d in ${display_array[@]}; do
 		$TERTIARY)
 			tertiary=$TERTIARY
 			;;
+		*)
+			other=$d
+			;;
 	esac
 done
 
 
-if ! $DOCKED; then
-	echo not docked
-	xrandr --output $primary --auto
-	exit 0
-fi
 
 if [[ -n $primary ]] && [[ -z $secondary ]] && [[ -z $tertiary ]]; then
-	xrandr --output $primary --auto
-elif [[ -n $primary ]] && [[ -n $secondary ]] && [[ -z $tertiary ]]; then
-	xrandr --output $secondary --auto
-	xrandr --output $secondary --right-of $primary
+	echo Just primary: $primary
+	xprofile activate undocked
+elif [[ -n $primary ]] && [[ -n $other ]]; then
+	echo Primary $primary and another random display $other
+	xrandr --output $other --auto
+	xrandr --output $other --right-of $primary
+elif [[ -z $primary ]] && [[ -n $secondary ]] && [[ -n $tertiary ]]; then
+	echo Lid closed both external displays connected $secondary $tertiary
+	xprofile activate docked
 elif [[ -n $primary ]] && [[ -n $secondary ]] && [[ -n $tertiary ]]; then
-	xrandr --output $secondary --auto
-	xrandr --output $secondary --right-of $primary
-	xrandr --output $tertiary --auto
-	xrandr --output $tertiary --right-of $secondary
-fi
-if ! $LID_OPEN; then
-	echo lid closed
-	xrandr --output $primary --off
+	echo All 3 connected $primary $secondary $tertiary
+	xprofile activate docked-open
+elif ! $DOCKED; then
+	xprofile activate undocked
+else
+	xrandr --auto
 fi

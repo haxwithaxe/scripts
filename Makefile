@@ -4,7 +4,7 @@ SHELL = /bin/bash
 .DEFAULT: all
 
 
-prefix ?= usr/local/
+prefix ?= 
 exec_prefix = $(prefix)
 bindir = $(exec_prefix)bin/
 sbindir = $(exec_prefix)sbin/
@@ -13,17 +13,11 @@ datadir = $(exec_prefix)share/
 
 SRCDIR ?= $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/
 
-DESTDIR ?= /
+DESTDIR ?= $(HOME)/.local/
 BINDIR = $(DESTDIR)$(bindir)
 SBINDIR = $(DESTDIR)$(sbindir)
 SYSCONFDIR = $(DESTDIR)$(sysconfdir)
 DATADIR = $(DESTDIR)$(datadir)
-
-ACPI_EVENTS = /etc/acpi/events/on_dock \
-			  /etc/acpi/events/on_undock \
-			  /etc/acpi/events/on_lid_open \
-			  /etc/acpi/events/on_lid_close
-
 
 DARKICETARGETS ?= $(BINDIR)darkice-media $(BINDIR)darkice-ft857d $(BINDIR)darkice-rtlsdr $(BINDIR)darkice-hackrf
 
@@ -41,7 +35,11 @@ noaa: $(BINDIR)conky-noaa.py $(BINDIR)noaa.py $(DATADIR)noaa/stations-with-zips.
 
 xsl: $(BINDIR)prettyxml $(DATADIR)xsl/prettyxml.xsl
 
-xrandr-setup: $(BINDIR)xrandr-setup
+prettyprinters: prettyxml prettyjson
+
+prettyxml: $(BINDIR)prettyxml
+
+prettyjson: $(BINDIR)prettyjson
 
 firefox-%: $(BIINDIR)firefox-%
 
@@ -68,13 +66,10 @@ $(BINDIR)conky-noaa.py $(BINDIR)noaa.py: $(DATADIR)noaa/stations-with-zips.csv
 
 $(DATADIR)noaa/stations-with-zips.csv: $(SRCDIR)noaa/stations-with-zipcodes.csv $(DATADIR)noaa
 
-$(BINDIR)acpi-listener: $(BINDIR)tosocket $(ACPI_EVENTS)
-
-$(ACPI_EVENTS): /etc/acpi/events
-	ln -sf $(SRCDIR)acpi-events/$* $@
+$(BINDIR)acpi-listener: $(BINDIR)tosocket
 
 $(SRCDIR)noaa/stations-with-zipcodes.csv:
-	python $(SRCDIR)noaa_stations_with_zips.py noaa/noaa_stations.csv  noaa/zips.csv $@
+	python2 $(SRCDIR)noaa_stations_with_zips.py noaa/noaa_stations.csv  noaa/zips.csv $@
 
 $(BINDIR)%:
 	ln -sf $(SRCDIR)$* $@

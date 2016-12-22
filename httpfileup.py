@@ -124,7 +124,7 @@ class Transfer:
         return self._chunk_size
 
 
-class UploadApp(http.server.BaseHTTPRequestHandler):
+class UploadApp(http.server.SimpleHTTPRequestHandler):
     """ HTTP request handler that provides file upload facilities.
     
     Arguments:
@@ -143,10 +143,12 @@ class UploadApp(http.server.BaseHTTPRequestHandler):
     use_client_dirs = False
     response_values = {'message': '', 'script_name': None, 'client_id': None, 'upload_filename': None, 'save_filename': None, 'save_dirname': None}
     upload_file = None
+    paths = {'path': '/', 'path': '/files'}
     template = FORM_TEMPLATE
+    serve_index = False
 
     @classmethod
-    def new(cls, script_name=None, save_path=None, template=None, logger_name='httpfileup', use_client_dirs=None, response_values=None):
+    def new(cls, script_name=None, save_path=None, template=None, logger_name='httpfileup', use_client_dirs=None, response_values=None, serve_index=False):
         """Get a configured subclass of UploadApp.
 
         Arguments:
@@ -156,6 +158,7 @@ class UploadApp(http.server.BaseHTTPRequestHandler):
             logger_name (str): The name of the logging.Logger instance. Defaults to 'httpfileup'.
             use_client_dirs (bool): Use separate directories for each client if True.
             response_values (dict): Default values to be passed to the templates.
+            serve_index (bool): Serve an index of files that have been uploaded.
 
         """
 
@@ -166,12 +169,16 @@ class UploadApp(http.server.BaseHTTPRequestHandler):
         _UploadApp.template = template or cls.template
         _UploadApp.response_values.update(response_values or {})
         _UploadApp.response_values['script_name'] = script_name or SCRIPT_PATH
+        _UploadApp.serve_index = serve_index
         if use_client_dirs is not None:
             _UploadApp.use_client_dirs = use_client_dirs
         return _UploadApp
 
     def do_GET(self):
-        self._render()
+        if self.path == self.paths['form']:
+            self._render()
+        elif self.serve_index and self.path == self.paths['index']:
+            super().do_GET()
 
     @property
     def save_dirname(self):
@@ -238,6 +245,10 @@ class UploadApp(http.server.BaseHTTPRequestHandler):
             self.send_response_only(204, 'No Content')
             self.end_headers()
 
+    def list_directory(self, path):
+        print('path', path)
+        return super().translate_path(os.path.join(self.save_path, path))
+
     def _handle_file_upload(self, upload_filename, upload_file, save_dirname, save_filename):
         content_length = int(self.headers.get('Content-Length', 64))
         self.logger.info('_handle_file_upload: filename = %s, content-length = %s', upload_filename, content_length)
@@ -271,7 +282,6 @@ class UploadApp(http.server.BaseHTTPRequestHandler):
 if __name__ == '__main__':
     import argparse
 
-    logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--address', default=ADDRESS)
     parser.add_argument('-p', '--port', type=int, default=PORT)
@@ -279,9 +289,12 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--save-path', default=SAVE_PATH)
     parser.add_argument('-s', '--script-path', default=SCRIPT_PATH)
     parser.add_argument('-t', '--template', type=argparse.FileType('r'), default=None)
+    parser.add_argument('--debug', default=False, action='store_true')
+    parser.add_argument('--index', default=False, action='store_true', help='Serve an index of the uploaded files.')
     args = parser.parse_args()
-    config = {'script_name': args.script_path, 'save_path': args.save_path, 'use_client_dirs': args.by_client}
+    config = {'script_name': args.script_path, 'save_path': args.save_path, 'use_client_dirs': args.by_client, 'serve_index': args.index}
     if args.template:
         config['template'] = args.template.read()
     print('address =', args.address or '0.0.0.0', 'port =', args.port)
+    logging.basicConfig(level={True: logging.DEBUG, False: logging.INFO}[args.debug])
     http.server.HTTPServer((args.address, args.port), UploadApp.new(**config)).serve_forever()

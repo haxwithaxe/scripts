@@ -1,0 +1,9 @@
+#!/bin/bash
+# Copyright 2014 haxwithaxe
+# License: CC0
+
+# Launch chromium with a separate profile in "private" mode.
+
+app_exec="chromium"
+
+$app_exec --temp-profile --incognito

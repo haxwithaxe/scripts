@@ -8,7 +8,6 @@ prefix ?=
 exec_prefix = $(prefix)
 bindir = $(exec_prefix)bin/
 sbindir = $(exec_prefix)sbin/
-sysconfdir = $(prefix)etc/
 datadir = $(exec_prefix)share/
 
 SRCDIR ?= $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/
@@ -16,7 +15,7 @@ SRCDIR ?= $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/
 DESTDIR ?= $(HOME)/.local/
 BINDIR = $(DESTDIR)$(bindir)
 SBINDIR = $(DESTDIR)$(sbindir)
-SYSCONFDIR = $(DESTDIR)$(sysconfdir)
+SYSCONFDIR = $(HOME)/.config/
 DATADIR = $(DESTDIR)$(datadir)
 
 DARKICETARGETS ?= $(BINDIR)darkice-media $(BINDIR)darkice-ft857d $(BINDIR)darkice-rtlsdr $(BINDIR)darkice-hackrf
@@ -41,16 +40,21 @@ prettyxml: $(BINDIR)prettyxml
 
 prettyjson: $(BINDIR)prettyjson
 
-firefox-%: $(BIINDIR)firefox-%
+firefox-%:
+	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-$*
 
-$(BINDIR)firefox-anon:
+chrome-anon:
+	ln -sf $(SRCDIR)chrome-anon $(BINDIR)chrome-anon
+
+chrome-%:
+	ln -sf $(SRCDIR)chrome-profile $(BINDIR)chrome-$*
+
+firefox-anon:
 	ln -sf $(SRCDIR)firefox-anon $(BINDIR)firefox-anon
 
-$(BINDIR)firefox-nono:
+firefox-nono:
 	ln -sf $(SRCDIR)firefox-nono $(BINDIR)firefox-nono
 
-$(BINDIR)firefox-%:
-	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-$*
 
 $(BINDIR)darkice-source:
 	ln -sf $(SRCDIR)darkice-source $@

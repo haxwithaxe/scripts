@@ -1,0 +1,34 @@
+#!/bin/bash
+# Copyright 2017 haxwithaxe
+# License: CC0
+
+# Launch chromium under the profile named after chrome-<profile name>
+
+app_exec="google-chrome"
+profile_dir="$HOME/.config/chromium-profiles"
+app_index="${profile_dir}/apps"
+today=`date --date='Today 00:00:00' +%s`
+script=$(basename $0)
+profile_app="$(sed 's/chrome-//' <<< $script)"
+if [ -z "${profile_app/+*/}" ]; then
+	profile="${profile_dir}/default"
+else
+	profile="${profile_dir}/${profile_app/+*/}"
+fi
+if [ -z "${profile_app/*+/}" ] || [ "${profile_app/+*/}" == "${profile_app/*+/}" ]; then
+	app="${profile}/app_url"
+else
+	app="${profile}/${profile_app/*+/}"
+fi
+
+if ! [ -d "$profile_dir" ]; then
+	mkdir -p $profile_dir
+fi
+
+if [ -e "$app" ]; then
+	app_url=$(cat "$app")
+	$app_exec --user-data-dir="$profile" --app="$app_url" --new-window $@
+else
+	$app_exec --user-data-dir="$profile" --new-window $@
+fi
+

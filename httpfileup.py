@@ -12,6 +12,8 @@ PORT = 8080
 ADDRESS = ''
 SAVE_PATH = '/tmp'
 SCRIPT_PATH = '/'
+INDEX_PATH = '/files'
+FORM_PATH = '/'
 CLIENT_ID_HEADER = 'CLIENT-ID'
 
 # Character replacement map for cleaning filenames
@@ -139,11 +141,12 @@ class UploadApp(http.server.SimpleHTTPRequestHandler):
     """
 
     logger = None
-    save_path = '/tmp'
+    save_path = SAVE_PATH
     use_client_dirs = False
     response_values = {'message': '', 'script_name': None, 'client_id': None, 'upload_filename': None, 'save_filename': None, 'save_dirname': None}
     upload_file = None
-    paths = {'path': '/', 'path': '/files'}
+    form_path = FORM_PATH
+    index_path = INDEX_PATH
     template = FORM_TEMPLATE
     serve_index = False
 
@@ -175,9 +178,9 @@ class UploadApp(http.server.SimpleHTTPRequestHandler):
         return _UploadApp
 
     def do_GET(self):
-        if self.path == self.paths['form']:
+        if self.path == self.form_path:
             self._render()
-        elif self.serve_index and self.path == self.paths['index']:
+        elif self.serve_index and self.path == self.index_path:
             super().do_GET()
 
     @property
@@ -195,13 +198,14 @@ class UploadApp(http.server.SimpleHTTPRequestHandler):
         if not self.upload_filename:
             raise AttributeError('missing upload_filename')
         save_filename = os.path.join(self.save_dirname, sanitize_pathname(self.upload_filename))
+        self.logger.debug('upload = "%s", save = "%s"', self.upload_filename, save_filename)
         self.response_values['save_filename'] = save_filename
         return save_filename
 
     def do_PUT(self):
         self.logger.debug('do_PUT')
         self.client_id = self.headers.get(CLIENT_ID_HEADER, self.client_address[0])
-        self.upload_filename = os.path.basename(self.path)
+        self.upload_filename = os.path.basename(self.path) or 'stdin'
         self.logger.debug('client_id = %s, upload_filename = %s', self.client_id, self.upload_filename)
         self.upload_file = self.rfile
         try:
@@ -220,11 +224,14 @@ class UploadApp(http.server.SimpleHTTPRequestHandler):
         content = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD': 'POST'})
         self.response_values['message'] = ''
         is_webform = bool(content.getvalue('webform', False))
-        self.client_id, self.response_values['client_id'] = content.getvalue('client_id', self.client_address[0])
+        self.client_id = self.response_values['client_id'] = content.getvalue('client_id', self.client_address[0])
         self.logger.debug('client_id: %s', self.client_id)
-        payload = content.getvalue('payload')
-        self.logger.debug(repr(payload))
-        self.upload_filename = payload.filename
+        forced_filename = content.getvalue('force_filename')
+        self.logger.debug('forced_filename: %s', forced_filename)
+        payload = content['payload']
+        self.logger.debug('payload: %s', payload)
+        self.logger.debug('repr(pauload): %s', repr(payload))
+        self.upload_filename = forced_filename or payload.filename
         self.upload_file = payload.file
         self._handle_file_upload(
                     self.upload_filename,
@@ -246,12 +253,11 @@ class UploadApp(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
     def list_directory(self, path):
-        print('path', path)
         return super().translate_path(os.path.join(self.save_path, path))
 
     def _handle_file_upload(self, upload_filename, upload_file, save_dirname, save_filename):
         content_length = int(self.headers.get('Content-Length', 64))
-        self.logger.info('_handle_file_upload: filename = %s, content-length = %s', upload_filename, content_length)
+        self.logger.debug('_handle_file_upload: upload_filename = %s, content-length = %s, save_filename = %s', upload_filename, content_length, save_filename)
         if not os.path.exists(save_dirname):
             os.makedirs(save_dirname, exist_ok=True)
         transfer = Transfer(upload_file=upload_file, content_length=content_length)
@@ -277,7 +283,16 @@ class UploadApp(http.server.SimpleHTTPRequestHandler):
         else:
             super().__setattr__(attr, value) # Raise native AttributeError
 
+def cheatsheet(host, port, path):
+	return '''POST from STDIN:
+>>> some-command | curl -X POST -F payload=@- -F force_filename=fake-filename {host}:{port}{path}
 
+POST from STDIN:
+>>> curl -X POST -F payload=@<filename> {host}:{port}{path}
+
+PUT multiple files
+>>> curl -X PUT -T <filename> {host}:{port}{path}
+'''.format(host=host, port=port, path=path)
 
 if __name__ == '__main__':
     import argparse
@@ -289,6 +304,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--save-path', default=SAVE_PATH)
     parser.add_argument('-s', '--script-path', default=SCRIPT_PATH)
     parser.add_argument('-t', '--template', type=argparse.FileType('r'), default=None)
+    parser.add_argument('--cheatsheet', help='Show some examples.', default=False, action='store_true')
     parser.add_argument('--debug', default=False, action='store_true')
     parser.add_argument('--index', default=False, action='store_true', help='Serve an index of the uploaded files.')
     args = parser.parse_args()
@@ -296,5 +312,7 @@ if __name__ == '__main__':
     if args.template:
         config['template'] = args.template.read()
     print('address =', args.address or '0.0.0.0', 'port =', args.port)
+    if args.cheatsheet:
+        print(cheatsheet(args.address or '0.0.0.0', args.port, args.script_path))
     logging.basicConfig(level={True: logging.DEBUG, False: logging.INFO}[args.debug])
     http.server.HTTPServer((args.address, args.port), UploadApp.new(**config)).serve_forever()

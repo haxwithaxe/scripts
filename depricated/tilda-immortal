@@ -1,5 +1,0 @@
-#!/bin/bash
-
-while $TILDA_UNDEAD ;do
-	tilda
-done

@@ -1,8 +1,0 @@
-#!/bin/bash
-
-params=$@
-
-while ! ( /usr/bin/ssh $params ) ;do
-	sleep 300
-done
-echo connected

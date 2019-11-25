@@ -1,0 +1,44 @@
+#!/bin/bash
+# Copyright 2018 haxwithaxe
+# License: CC0
+
+# Launch chromium with a separate profile in "private" mode with a socks proxy via the given remote host.
+
+set -e
+
+if ! which chrome-anon; then
+    echo "https://github.com/haxwithaxe/scripts/blob/master/chrome-anon is required to be in \$PATH." >&2
+    exit 1
+fi
+
+remote_host="$1"
+shift  # remove the first arg so the rest can be passed to chrome-anon
+port=55000
+profile_dir=$(mktemp -d /tmp/chrome-temp-profile.XXX)
+
+if pgrep -f "ssh -D .* -N $remote_host"; then
+    echo "INFO: Using existing ssh connection."
+    port=$(pgrep -fa "ssh -D .* -N $remote_host" | sed 's/.*-D //;s/ .*//')
+else
+    if nc -z 127.0.0.1 $port; then
+	echo "INFO: Port $port is in use."
+	for suffix in $(seq 999); do
+	    port="55$(printf '%03i' $suffix)"
+	    echo "DEBUG: Trying port $port."
+	    if ! nc -z 127.0.0.1 "$port"; then
+		echo "DEBUG: Found open port $port."
+		break
+	    fi
+	    if [ $suffix -eq 999 ]; then
+		echo "ERROR: Could not find an open port between 55001 and 55999."
+		exit 1
+	    fi
+	done
+    fi
+    echo "INFO: Using port $port."
+    ssh -v -D $port -f -q -N $remote_host
+    echo $?
+fi
+
+set -x
+chrome-anon --proxy-server="socks://localhost:$port" $@

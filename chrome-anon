@@ -1,9 +1,21 @@
 #!/bin/bash
-# Copyright 2014 haxwithaxe
+# Copyright 2018 haxwithaxe
 # License: CC0
 
 # Launch chromium with a separate profile in "private" mode.
 
-app_exec="chromium"
+profile_dir=$(mktemp -d /tmp/chrome-temp-profile.XXX)
 
-$app_exec --temp-profile --incognito
+chromium --user-data-dir="$profile_dir" \
+    --no-default-browser-check \
+    --no-first-run \
+    --incognito \
+    $@
+
+echo "INFO: Shredding temporary profile $profile_dir ..."
+# Scrub the temporary profile files
+# If this fails the profile directory will still be removed
+find "$profile_dir" -type f -exec shred -ux {} \;
+# Remove the profile directory
+rm -rf "$profile_dir"
+echo "INFO: Done shredding $profile_dir."

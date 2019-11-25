@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 
-.PHONY: all ham firefox noaa xrandr-setup xsl
+.PHONY: all ham firefox chrome noaa xrandr-setup xsl
 .DEFAULT: all
 
 
@@ -22,13 +22,15 @@ DARKICETARGETS ?= $(BINDIR)darkice-media $(BINDIR)darkice-ft857d $(BINDIR)darkic
 
 DIRS = $(DESTDIR) $(BINDIR) $(SBINDIR) $(SYSCONFDIR) $(DATADIR) $(DATADIR)noaa $(DATADIR)xsl
 
-all: firefox noaa xsl ham acpi
+all: firefox ham
 
 acpi: $(BINDIR)acpi-listener
 
 ham: $(BINDIR)grig-ft857d
 
 firefox: $(BINDIR)firefox-anon $(BINDIR)firefox-nono $(BINDIR)firefox-work $(BINDIR)firefox-personal
+
+chrome: $(BINDIR)chrome-anon $(BINDIR)chrome-nono $(BINDIR)chrome-work $(BINDIR)chrome-personal
 
 noaa: $(BINDIR)conky-noaa.py $(BINDIR)noaa.py $(DATADIR)noaa/stations-with-zips.csv
 
@@ -40,21 +42,27 @@ prettyxml: $(BINDIR)prettyxml
 
 prettyjson: $(BINDIR)prettyjson
 
-firefox-%:
-	ln -sf $(SRCDIR)firefox-profile $(BINDIR)firefox-$*
+firefox-%: $(BINDIR)firefox-%
 
-chrome-anon:
+chrome-%: $(BINDIR)chrome-%
+
+$(BINDIR)chrome-anon:
 	ln -sf $(SRCDIR)chrome-anon $(BINDIR)chrome-anon
 
-chrome-%:
-	ln -sf $(SRCDIR)chrome-profile $(BINDIR)chrome-$*
+$(BINDIR)chrome-anon-proxy:
+	ln -sf $(SRCDIR)chrome-anon-proxy $(BINDIR)chrome-anon-proxy
 
-firefox-anon:
+$(BINDIR)firefox-anon:
 	ln -sf $(SRCDIR)firefox-anon $(BINDIR)firefox-anon
 
-firefox-nono:
+$(BINDIR)firefox-nono:
 	ln -sf $(SRCDIR)firefox-nono $(BINDIR)firefox-nono
 
+$(BINDIR)firefox-%:
+	ln -sf $(SRCDIR)firefox-$* $(BINDIR)firefox-$*
+
+$(BINDIR)chrome-%:
+	ln -sf $(SRCDIR)chrome-$* $(BINDIR)chrome-$*
 
 $(BINDIR)darkice-source:
 	ln -sf $(SRCDIR)darkice-source $@

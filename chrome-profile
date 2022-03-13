@@ -25,6 +25,8 @@ profile_app="$(sed 's/^chrome-//' <<< $script)"
 
 # Get profile name
 if [ -z "${profile_app/+*/}" ] || ! (egrep -q '^chrome-' <<< $script); then
+	# If this script doesn't have a profile name or is called by a name that
+	# doesn't start with `chrome-` assume the profile name is default.
 	profile="${profile_dir}/default"
 else
 	profile="${profile_dir}/${profile_app/+*/}"
@@ -45,14 +47,14 @@ elif [ -n "${profile_app/*+/}" ]; then
 fi
 
 # Ensure the profile dir exists
-if ! [ -d "$profile_dir" ]; then
-	mkdir -p $profile_dir
-fi
+# Note: I don't know why I did this
+mkdir -p $profile_dir
 
 # Launch chrome
 if [ -e "$app" ]; then
 	# This is a webapp
-	app_url=$(cat "$app")
+	# Just grab the first line of the file without leading and trailing spaces
+	app_url=$(head -n 1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' "$app")
 	$app_exec --user-data-dir="$profile" --app="$app_url" --new-window $@
 else
 	# This is just a browser

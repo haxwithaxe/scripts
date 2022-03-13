@@ -1,8 +1,19 @@
 #!/bin/bash
 # Copyright 2017 haxwithaxe
 # License: CC0
-
+#
 # Launch chromium under the profile named after chrome-<profile name>
+# This script uses whatever comes after `chrome-` in the name it's called by
+# as the profile name.
+#
+# Usage:
+#   Symlink or copy this file to `chrome-myprofile` where `myprofile` is
+#   whatever name you want to give your profile.
+#
+#   To launch in app mode add a file to the profile directory with the url as
+#   the only line and link or copy this file to `chome-myprofile+app` where
+#   `myprofile` is the name of the desired profile and `app` is the name of the
+#   file added to the profile directory with the url.
 
 app_exec="chromium"
 profile_dir="$HOME/.config/chromium-profiles"
@@ -10,29 +21,40 @@ app_index="${profile_dir}/apps"
 today=`date --date='Today 00:00:00' +%s`
 script=$(basename $0)
 is_app=
-profile_app="$(sed 's/chrome-//' <<< $script)"
+profile_app="$(sed 's/^chrome-//' <<< $script)"
 
+# Get profile name
 if [ -z "${profile_app/+*/}" ] || ! (egrep -q '^chrome-' <<< $script); then
 	profile="${profile_dir}/default"
 else
 	profile="${profile_dir}/${profile_app/+*/}"
 fi
 
+# Get app name
 if ! (egrep -q '^chrome-' <<< $script); then
+	# If this script is called by a name that doesn't start with `chrome-`
+	# assume it's a webapp and set the url file to the name it was called by.
 	app="${profile}/${profile_app}"
 elif [ -z "${profile_app/*+/}" ] || [ "${profile_app/+*/}" == "${profile_app/*+/}" ]; then
+	# If the profile name and the app name are the same set the app url file to `app_url`.
+	# Note: I don't remember why I did this instead of just using the app name.
 	app="${profile}/app_url"
-else
+elif [ -n "${profile_app/*+/}" ]; then
+	# Finally if there is an app name set the app file to that name.
 	app="${profile}/${profile_app/*+/}"
 fi
 
+# Ensure the profile dir exists
 if ! [ -d "$profile_dir" ]; then
 	mkdir -p $profile_dir
 fi
 
+# Launch chrome
 if [ -e "$app" ]; then
+	# This is a webapp
 	app_url=$(cat "$app")
 	$app_exec --user-data-dir="$profile" --app="$app_url" --new-window $@
 else
+	# This is just a browser
 	$app_exec --user-data-dir="$profile" --new-window $@
 fi

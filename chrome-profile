@@ -4,7 +4,7 @@
 
 # Launch chromium under the profile named after chrome-<profile name>
 
-app_exec="google-chrome"
+app_exec="chromium"
 profile_dir="$HOME/.config/chromium-profiles"
 app_index="${profile_dir}/apps"
 today=`date --date='Today 00:00:00' +%s`
